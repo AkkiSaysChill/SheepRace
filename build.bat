@@ -33,7 +33,7 @@ IF NOT EXIST ".\tools\asset_bundler\build\asset_bundler.exe" (
   echo Please ensure the asset_bundler project has been built.
   EXIT /B 1
 )
-".\tools\asset_bundler\build\asset_bundler.exe" ".\resources\cars" ".\build\cars.pack"
+".\tools\asset_bundler\build\asset_bundler.exe" ".\resources\cars" ".\build\Release\cars.pack"
 REM Check if asset bundling was successful
 IF %ERRORLEVEL% NEQ 0 (
   echo Error: Asset bundling failed.
@@ -66,6 +66,8 @@ echo Build process finished successfully!
 echo You can now run the game:
 
 REM Check if the executable exists before suggesting to run it
+REM Changing directory
+cd Release
 IF EXIST ".\sheepRace.exe" (
   echo .\sheepRace.exe
   echo.
