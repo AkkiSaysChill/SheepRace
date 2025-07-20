@@ -44,7 +44,7 @@ MSBuild sheepRace.sln /p:Configuration=Release
 ```
 
 - now there should be a sheepRace.exe in the build directory 
-## to run the game 
 
-```
-```
+
+* the windows build is not tested, 
+
