@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/heisenberg/Projects/SheepRace/tools/asset_bundler/build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

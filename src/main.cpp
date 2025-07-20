@@ -1,12 +1,53 @@
+#include "asset_loader.hpp"
 #include "car.h"
 #include "imgui.h"
 #include "raylib.h"
 #include "rlImGui.h"
 
+// asset loader
+
+#include <filesystem> // For temporary file creation
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <vector>
+
+namespace fs = std::filesystem;
+
+// Helper function to load model from asset data (via temporary file)
+Model LoadModelFromAssetData(const std::vector<char> &asset_data,
+                             const std::string &original_filename) {
+  if (asset_data.empty()) {
+    return {0}; // Return empty model
+  }
+
+  // Create a temporary file
+  std::string temp_filename = fs::temp_directory_path().string() + "/" +
+                              fs::path(original_filename).filename().string();
+  std::ofstream temp_ofs(temp_filename, std::ios::binary);
+  if (!temp_ofs.is_open()) {
+    std::cerr << "Error: Could not create temporary file for asset: "
+              << original_filename << std::endl;
+    return {0};
+  }
+  temp_ofs.write(reinterpret_cast<const char *>(asset_data.data()),
+                 asset_data.size());
+  temp_ofs.close();
+
+  // Load model from temporary file
+  Model model = LoadModel(temp_filename.c_str());
+
+  // Delete temporary file
+  fs::remove(temp_filename);
+
+  return model;
+}
+
 int main() {
   int screenWidth = 1280;
   int screenHeight = 720;
 
+  AssetPacking::AssetLoader asset_loader;
   SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT);
   InitWindow(screenWidth, screenHeight, "the sheep game");
   SetTargetFPS(60);
@@ -27,6 +68,13 @@ int main() {
   Car car; // Create a car instance
 
   camera.target = car.GetPosition();
+
+  asset_loader.loadPackedFile("asset.pack");
+
+  // Load the car model from the asset loader
+  Model car_model = LoadModelFromAssetData(
+      asset_loader.getAssetData("sheep.glb"), "sheep.glb");
+
   while (!WindowShouldClose()) {
 
     camera.fovy = fov;                          // Camera field-of-view Y
@@ -37,7 +85,10 @@ int main() {
     ClearBackground(RAYWHITE);
     BeginMode3D(camera);
 
-    car.Draw(); // Draw the car
+    DrawModel(car_model, {5, 0, 5}, 10, WHITE);
+    DrawModelEx(car_model, {5, 20, 0}, {1, 2, 3}, 180.0f, {10.0f, 10.0f, 10.0f},
+                WHITE);
+    // car.Draw(); // Draw the car
 
     DrawGrid(10, 10);
 

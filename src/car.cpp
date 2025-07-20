@@ -3,10 +3,10 @@
 #include "raymath.h"
 
 Car::Car() {
-  model = LoadModel("resources/van.glb");
-  scale = 1.0f;
+  model = LoadModel("resources/car.glb");
+  scale = 0.1f;
   rotation = 0.0f;
-  position = {0.0f, 0.0f, 0.0f};
+  position = {-5.0f, 0.0f, 0.0f};
   velocity = {0.0f, 0.0f, 0.0f};
   acceleration = {0.0f, 0.0f, 0.0f};
   speed = 0.0f;
