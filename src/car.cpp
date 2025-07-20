@@ -3,7 +3,11 @@
 #include "raymath.h"
 
 Car::Car() {
-  model = LoadModel("resources/car.glb");
+
+  assetLoader.loadPackedFile("cars.pack");
+  model = assetLoader.LoadModelFromAssetData(
+      assetLoader.getAssetData("car.glb"), "car.glb");
+
   scale = 0.1f;
   rotation = 0.0f;
   position = {-5.0f, 0.0f, 0.0f};

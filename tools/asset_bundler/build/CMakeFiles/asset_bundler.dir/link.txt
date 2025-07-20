@@ -1,0 +1,1 @@
+/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/asset_bundler.dir/link.d CMakeFiles/asset_bundler.dir/main.cpp.o -o asset_bundler  -lstdc++fs

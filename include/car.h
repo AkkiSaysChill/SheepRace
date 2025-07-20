@@ -1,5 +1,6 @@
 #pragma once
 
+#include "asset_loader.hpp"
 #include "raylib.h"
 
 class Car {
@@ -17,6 +18,8 @@ public:
   void setScale(float newScale) { scale = newScale; }
 
 private:
+  AssetPacking::AssetLoader assetLoader;
+
   Vector3 position;
   Vector3 velocity;
   Vector3 acceleration;
