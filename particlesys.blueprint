@@ -1,0 +1,73 @@
+I am building a C++ game engine using Raylib (rlgl/OpenGL) and Bullet Physics. 
+My engine is component-based (ECS-like), and I already have a basic particle system 
+that renders billboarded textured quads on the CPU.
+
+I want to redesign my particle/VFX system from scratch into a MODULAR, MULTI-FUNCTIONAL system 
+similar to modern game engines (Unity VFX Graph / Unreal Niagara style but simplified).
+
+Requirements:
+
+1. ARCHITECTURE:
+- Separate concepts:
+  - Particle (data)
+  - Emitter (spawning logic)
+  - ParticleSystem (container)
+  - Renderer (GPU side)
+- Should support multiple emitters in one system
+- Should be extensible (plug in new behaviors easily)
+
+2. PARTICLE FEATURES:
+Each particle should support:
+- position, velocity, acceleration
+- lifetime (current + max)
+- size over lifetime
+- color over lifetime (gradient support)
+- rotation
+- optional physics influence (gravity, drag)
+
+3. EMITTER TYPES:
+System must support multiple effect types using the same core:
+- Smoke (slow, rising, fading, soft edges)
+- Bullet hit (burst, sparks, debris)
+- Rain (continuous emission + downward velocity)
+- Water splash (arc + gravity + short lifetime)
+- Shockwave (expanding ring)
+
+4. SHOCKWAVE / DISTORTION:
+Explain how to implement a screen-space distortion effect:
+- using a normal map or distortion texture
+- using a post-processing shader in Raylib
+- sampling the screen texture with UV offset
+- should create “heatwave / explosion shockwave” bending effect
+
+5. RENDERING:
+- Replace per-particle DrawBillboard with:
+  - batched rendering OR instanced rendering
+- Use a single quad mesh for particles
+- Pass per-particle data to GPU (position, size, color)
+- Vertex shader should handle billboarding
+
+6. ADVANCED:
+- Explain how to migrate to GPU-based particles later (SSBO / compute shader idea)
+- Explain how to implement a texture atlas for animation
+
+7. PERFORMANCE:
+- Avoid per-particle draw calls
+- Avoid expensive CPU loops where possible
+- Suggest memory layout optimizations (SoA vs AoS)
+
+8. CODE:
+Provide:
+- Clean C++ class structure (headers + pseudocode)
+- Example emitter configs for:
+  - smoke
+  - bullet impact
+  - shockwave
+  - rain
+
+9. BONUS:
+- Explain how to layer multiple effects together (e.g. explosion = smoke + sparks + shockwave)
+
+IMPORTANT:
+Do NOT give a beginner explanation. 
+Give a practical, engine-level implementation plan with code-like structure.

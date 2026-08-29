@@ -1,0 +1,14 @@
+bak
+.cache/clangd/index
+build
+out
+ 
+ 
+.vs
+old-renderer
+TODO.txt
+.vsss
+old_includes-srcs
+compile_commands.json
+build_debug
+.clangd

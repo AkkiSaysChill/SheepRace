@@ -1,0 +1,7 @@
+[submodule "libs/bullet3"]
+	path = libs/bullet3
+	url = https://github.com/bulletphysics/bullet3.git
+
+[submodule "libs/imguizmo"]
+	path = libs/imguizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo.git

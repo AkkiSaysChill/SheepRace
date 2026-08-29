@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AircraftDatabase>
+    <Plane id="trainer">
+        <Name>Trainer (Cessna 172)</Name>
+        <ModelFile>trainer.glb</ModelFile>
+        <MaxThrustSpeed>70.0</MaxThrustSpeed>
+        <StallSpeedThreshold>18.0</StallSpeedThreshold>
+        <ThrottleResponse>6.0</ThrottleResponse>
+        <BrakeDecel>12.0</BrakeDecel>
+        <BaseDragFactor>1.1</BaseDragFactor>
+        <ClimbDragMultiplier>32.0</ClimbDragMultiplier>
+        <GlideSinkRate>1.2</GlideSinkRate>
+        <BankSinkStrength>3.0</BankSinkStrength>
+        <PitchRate>0.95</PitchRate>
+        <RollRate>1.10</RollRate>
+        <YawRate>0.50</YawRate>
+        <PitchInertia>1.8</PitchInertia>
+        <BankNoseSlip>0.30</BankNoseSlip>
+    </Plane>
+
+    <Plane id="jet_mk2">
+        <Name>Stealth Fighter Mk2</Name>
+        <ModelFile>jet_mk2.glb</ModelFile>
+        <MaxThrustSpeed>175.0</MaxThrustSpeed>
+        <StallSpeedThreshold>30.0</StallSpeedThreshold>
+        <ThrottleResponse>16.0</ThrottleResponse>
+        <BrakeDecel>22.0</BrakeDecel>
+        <BaseDragFactor>0.75</BaseDragFactor>
+        <ClimbDragMultiplier>48.0</ClimbDragMultiplier>
+        <GlideSinkRate>2.6</GlideSinkRate>
+        <BankSinkStrength>4.8</BankSinkStrength>
+        <PitchRate>1.75</PitchRate>
+        <RollRate>3.20</RollRate>
+        <YawRate>0.90</YawRate>
+        <PitchInertia>3.8</PitchInertia>
+        <BankNoseSlip>0.12</BankNoseSlip>
+    </Plane>
+
+    <Plane id="cargo">
+        <Name>Heavy Cargo (C-130)</Name>
+        <ModelFile>cargo.glb</ModelFile>
+        <MaxThrustSpeed>85.0</MaxThrustSpeed>
+        <StallSpeedThreshold>25.0</StallSpeedThreshold>
+        <ThrottleResponse>4.0</ThrottleResponse>
+        <BrakeDecel>10.0</BrakeDecel>
+        <BaseDragFactor>1.5</BaseDragFactor>
+        <ClimbDragMultiplier>28.0</ClimbDragMultiplier>
+        <GlideSinkRate>1.8</GlideSinkRate>
+        <BankSinkStrength>4.0</BankSinkStrength>
+        <PitchRate>0.65</PitchRate>
+        <RollRate>0.70</RollRate>
+        <YawRate>0.35</YawRate>
+        <PitchInertia>1.1</PitchInertia>
+        <BankNoseSlip>0.45</BankNoseSlip>
+    </Plane>
+
+    <Plane id="commercial_airliner">
+        <Name>Commercial Airliner</Name>
+        <ModelFile>commercial_plane.glb</ModelFile>
+        <MaxThrustSpeed>110.0</MaxThrustSpeed>
+        <StallSpeedThreshold>28.0</StallSpeedThreshold>
+        <ThrottleResponse>3.5</ThrottleResponse>
+        <BrakeDecel>11.0</BrakeDecel>
+        <BaseDragFactor>1.35</BaseDragFactor>
+        <ClimbDragMultiplier>30.0</ClimbDragMultiplier>
+        <GlideSinkRate>1.6</GlideSinkRate>
+        <BankSinkStrength>3.8</BankSinkStrength>
+        <PitchRate>0.60</PitchRate>
+        <RollRate>0.65</RollRate>
+        <YawRate>0.30</YawRate>
+        <PitchInertia>0.95</PitchInertia>
+        <BankNoseSlip>0.40</BankNoseSlip>
+    </Plane>
+
+    <Plane id="airport_airplane">
+        <Name>Regional Commuter</Name>
+        <ModelFile>airport_airplane.glb</ModelFile>
+        <MaxThrustSpeed>80.0</MaxThrustSpeed>
+        <StallSpeedThreshold>20.0</StallSpeedThreshold>
+        <ThrottleResponse>5.5</ThrottleResponse>
+        <BrakeDecel>12.0</BrakeDecel>
+        <BaseDragFactor>1.2</BaseDragFactor>
+        <ClimbDragMultiplier>30.0</ClimbDragMultiplier>
+        <GlideSinkRate>1.4</GlideSinkRate>
+        <BankSinkStrength>3.2</BankSinkStrength>
+        <PitchRate>0.80</PitchRate>
+        <RollRate>0.90</RollRate>
+        <YawRate>0.45</YawRate>
+        <PitchInertia>1.4</PitchInertia>
+        <BankNoseSlip>0.32</BankNoseSlip>
+    </Plane>
+
+    <Plane id="airport_airplane_3">
+        <Name>Tri-Engine Jetliner</Name>
+        <ModelFile>airport_airplane_3.glb</ModelFile>
+        <MaxThrustSpeed>115.0</MaxThrustSpeed>
+        <StallSpeedThreshold>29.0</StallSpeedThreshold>
+        <ThrottleResponse>4.2</ThrottleResponse>
+        <BrakeDecel>11.5</BrakeDecel>
+        <BaseDragFactor>1.3</BaseDragFactor>
+        <ClimbDragMultiplier>32.0</ClimbDragMultiplier>
+        <GlideSinkRate>1.7</GlideSinkRate>
+        <BankSinkStrength>4.0</BankSinkStrength>
+        <PitchRate>0.58</PitchRate>
+        <RollRate>0.62</RollRate>
+        <YawRate>0.28</YawRate>
+        <PitchInertia>0.90</PitchInertia>
+        <BankNoseSlip>0.42</BankNoseSlip>
+    </Plane>
+
+    <Plane id="sea_duck">
+        <Name>Sea Duck Amphibian</Name>
+        <ModelFile>sea_duck.glb</ModelFile>
+        <MaxThrustSpeed>78.0</MaxThrustSpeed>
+        <StallSpeedThreshold>19.0</StallSpeedThreshold>
+        <ThrottleResponse>5.0</ThrottleResponse>
+        <BrakeDecel>13.0</BrakeDecel>
+        <BaseDragFactor>1.4</BaseDragFactor>
+        <ClimbDragMultiplier>34.0</ClimbDragMultiplier>
+        <GlideSinkRate>1.5</GlideSinkRate>
+        <BankSinkStrength>3.4</BankSinkStrength>
+        <PitchRate>0.75</PitchRate>
+        <RollRate>0.80</RollRate>
+        <YawRate>0.42</YawRate>
+        <PitchInertia>1.3</PitchInertia>
+        <BankNoseSlip>0.38</BankNoseSlip>
+    </Plane>
+</AircraftDatabase>
