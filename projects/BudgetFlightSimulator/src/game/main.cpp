@@ -12,6 +12,8 @@ void RegisterGameScenes(Engine &engine) {
   sceneManager.AddScene<HangarSelectScene>("HangarScene");
   sceneManager.AddScene<BudgetFlightSimulatorScene>("FlightScene");
 
+  SetWindowTitle("Budget Flight Simulator");
+
   // Launch directly into the Main Menu
   sceneManager.LoadScene("MainMenuScene");
 }

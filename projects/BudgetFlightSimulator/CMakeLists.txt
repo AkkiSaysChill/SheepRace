@@ -12,6 +12,7 @@ set(GAME_SOURCES
     src/game/MainMenuScene.cpp
     src/game/HangarSelectScene.cpp
     src/game/TerrainMap.cpp
+    src/game/Ocean.cpp
 )
 
 # Create the executable

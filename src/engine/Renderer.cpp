@@ -118,6 +118,11 @@ void Renderer::Render(GameObjectManager &scene, Camera &camera,
   SetShaderValue(m_shadowShader, m_shadowShader.locs[SHADER_LOC_VECTOR_VIEW],
                  &cameraPos, SHADER_UNIFORM_VEC3);
 
+
+  m_currentSkySunVector = Vector3Negate(lightDir); 
+  SetShaderValue(m_skyShader, GetShaderLocation(m_skyShader, "u_lightDir"),
+               &m_currentSkySunVector, SHADER_UNIFORM_VEC3); 
+
   // ── 1. SHADOW MAP PASS ───────────────────────────────────────
   Matrix lightView, lightProj;
   Camera3D lightCam = {0};
