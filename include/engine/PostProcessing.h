@@ -18,16 +18,17 @@ typedef enum {
   FX_BLUR,
   FX_HORROR,
   FX_BRAINROT,
-  // FX_FXAA
+  FX_FOG,
+  FX_FXAA,
+  FX_CEL_FXAA
 } PostproShader;
 
 static const char *postproShaderText[] = {
     "GRAYSCALE",      "POSTERIZATION",   "DREAM_VISION",  "PIXELIZER",
     "CROSS_HATCHING", "CROSS_STITCHING", "PREDATOR_VIEW", "SCANLINES",
     "FISHEYE",        "SOBEL",           "BLOOM",         "BLUR",
-    "HORROR",         "BRAINROT",
-    //"FXAA"
-};
+    "HORROR",         "BRAINROT",        "FOG",           "FXAA",
+    "CELL_FXAA"};
 
 class PostProcessing {
 public:
@@ -44,6 +45,6 @@ public:
   int timeLoc;
 
 private:
-  Shader shader[14] = {0};
+  Shader shader[17] = {0};
   PostproShader currentShader;
 };

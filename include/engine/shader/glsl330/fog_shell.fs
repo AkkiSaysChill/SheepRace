@@ -1,41 +1,32 @@
 #version 330
 
-in vec2 fragTexCoord;
-
-uniform sampler2D texture0;    // Color buffer (the rendered scene)
-uniform sampler2D depthTexture; // Scene depth buffer
-
-uniform float nearPlane;
-uniform float farPlane;
-uniform float fogDensity;
-uniform vec4 fogColor;
+in vec3 v_worldPos;
+uniform vec3 u_camPos;
 
 out vec4 finalColor;
 
-// Linearize OpenGL non-linear depth
-float LinearizeDepth(float depth)
-{
-    float z = depth * 2.0 - 1.0; 
-    return (2.0 * nearPlane * farPlane) / (farPlane + nearPlane - z * (farPlane - nearPlane));
-}
+// Atmospheric horizon color (matches your sky gradient)
+const vec3 FOG_COLOR = vec3(0.55, 0.65, 0.82);
+
+// Distance range where mist accumulates
+const float FOG_NEAR = 1500.0;
+const float FOG_FAR  = 6200.0;
 
 void main()
 {
-    vec4 sceneColor = texture(texture0, fragTexCoord);
-    float rawDepth = texture(depthTexture, fragTexCoord).r;
+    // Horizontal distance across the horizon
+    float dist = length(v_worldPos.xz - u_camPos.xz);
 
-    // If depth is at the far plane (skybox/background), skip or use horizon color
-    if (rawDepth >= 0.99999)
-    {
-        finalColor = sceneColor;
-        return;
-    }
+    // Smooth exponential distance ramp
+    float distFactor = clamp((dist - FOG_NEAR) / (FOG_FAR - FOG_NEAR), 0.0, 1.0);
+    float alpha = distFactor * distFactor * (3.0 - 2.0 * distFactor);
 
-    float linearDist = LinearizeDepth(rawDepth);
+    // Vertical atmospheric falloff: dense near sea level, fades out into the upper sky
+    // This ensures the sky directly above remains completely open and blue
+    float altitude = v_worldPos.y;
+    float verticalFade = exp(-max(0.0, altitude) * 0.0012);
 
-    // Raylib exponential-squared fog formula
-    float fogFactor = 1.0 / exp((linearDist * fogDensity) * (linearDist * fogDensity));
-    fogFactor = clamp(fogFactor, 0.0, 1.0);
+    alpha *= verticalFade * 0.85; // Capped at 85% so land silhouetting stays natural
 
-    finalColor = mix(fogColor, sceneColor, fogFactor);
+    finalColor = vec4(FOG_COLOR, alpha);
 }

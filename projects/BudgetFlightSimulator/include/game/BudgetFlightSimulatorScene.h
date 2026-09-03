@@ -2,8 +2,8 @@
 #include "engine/Scene3D.h"
 #include "game/Aircraft.h"
 #include "game/FlightCamera.h"
-#include "game/TerrainMap.h"
 #include "game/Ocean.h"
+#include "game/TerrainMap.h"
 #include "raylib.h"
 #include <memory>
 #include <string>
@@ -41,12 +41,6 @@ private:
 
   size_t m_currentPlaneIndex = 0;
 
-
-  RenderTexture2D m_sceneTarget;
-Shader m_screenFogShader;
-int m_fogDensityLoc;
-int m_fogColorLoc;
-int m_nearLoc;
-int m_farLoc;
-bool m_fogLoaded = false;
+  Shader m_worldFogShader = {0};
+  bool m_worldFogLoaded = false;
 };

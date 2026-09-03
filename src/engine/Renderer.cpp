@@ -28,7 +28,7 @@ RenderTexture2D LoadDepthRenderTexture(int width, int height) {
                         RL_ATTACHMENT_COLOR_CHANNEL0, RL_ATTACHMENT_TEXTURE2D,
                         0);
 
-    // 2. Depth Texture (The Magic Part)
+    // 2. Depth Texture
     target.depth.id = rlLoadTextureDepth(width, height, false);
     target.depth.width = width;
     target.depth.height = height;
@@ -87,11 +87,7 @@ Renderer::Renderer(int screenWidth, int screenHeight,
   skyShaderFS.push_back('\0');
   m_skyShader = LoadShaderFromMemory(0, skyShaderFS.data());
 
-  // m_target = LoadRenderTexture(screenWidth, screenHeight);
   m_target = LoadDepthRenderTexture(screenWidth, screenHeight);
-
-  // SetTextureFilter(m_target.texture, TEXTURE_FILTER_BILINEAR);
-  // SetTextureFilter(m_reflectionTarget.texture, TEXTURE_FILTER_BILINEAR);
 }
 
 Renderer::~Renderer() {
@@ -118,10 +114,9 @@ void Renderer::Render(GameObjectManager &scene, Camera &camera,
   SetShaderValue(m_shadowShader, m_shadowShader.locs[SHADER_LOC_VECTOR_VIEW],
                  &cameraPos, SHADER_UNIFORM_VEC3);
 
-
-  m_currentSkySunVector = Vector3Negate(lightDir); 
+  m_currentSkySunVector = Vector3Negate(lightDir);
   SetShaderValue(m_skyShader, GetShaderLocation(m_skyShader, "u_lightDir"),
-               &m_currentSkySunVector, SHADER_UNIFORM_VEC3); 
+                 &m_currentSkySunVector, SHADER_UNIFORM_VEC3);
 
   // ── 1. SHADOW MAP PASS ───────────────────────────────────────
   Matrix lightView, lightProj;
@@ -183,14 +178,12 @@ void Renderer::Render(GameObjectManager &scene, Camera &camera,
   SetShaderValue(m_skyShader, GetShaderLocation(m_skyShader, "u_cameraFovY"),
                  &fovYRadians, SHADER_UNIFORM_FLOAT);
 
-  // ── 3. TRUE PLANAR REFLECTION PASS (With Submerged Clipping) ───
+  // ── 3. PLANAR REFLECTION PASS ────────────────────────────────
   if (extraDraw3D) {
     Camera reflectionCam = camera;
-    reflectionCam.position.y =
-        -camera.position.y; // Invert camera position over water plane (Y=0)
-    reflectionCam.target.y = -camera.target.y; // Invert target
+    reflectionCam.position.y = -camera.position.y;
+    reflectionCam.target.y = -camera.target.y;
 
-    // Recalculate up vectors carefully for flipped view bounds
     Vector3 rwd = Vector3Normalize(
         Vector3Subtract(reflectionCam.target, reflectionCam.position));
     Vector3 rRight = Vector3Normalize(Vector3CrossProduct(rwd, camera.up));
@@ -199,13 +192,11 @@ void Renderer::Render(GameObjectManager &scene, Camera &camera,
     BeginTextureMode(m_reflectionTarget);
     ClearBackground(BLACK);
 
-    // Draw Sky Background into Reflection buffer
     BeginShaderMode(m_skyShader);
     DrawRectangle(0, 0, m_reflectionTarget.texture.width,
                   m_reflectionTarget.texture.height, WHITE);
     EndShaderMode();
 
-    // ISOLATE REFLECTION MATRIX STACK
     rlPushMatrix();
     BeginMode3D(reflectionCam);
 
@@ -227,38 +218,23 @@ void Renderer::Render(GameObjectManager &scene, Camera &camera,
     rlEnableTexture(m_shadowMap.depth.id);
     rlSetUniform(shadowMapLoc, &slot, SHADER_UNIFORM_INT, 1);
 
-    // ==========================================================
-    // UNDERWATER REFLECTION LEAK FIX (SAFE SCENE LOOP)
-    // ==========================================================
-    // Using 'scene' variable passed directly via Render method parameters!
     for (const auto &obj : scene.GetGameObjects()) {
       if (obj->GetComponent<DrawableComponent>()) {
-
-        // 1. Skip heavy trees inside reflection if needed
-        if (obj->name.find("STATIC_TREE_") != std::string::npos) {
+        if (obj->name.find("STATIC_TREE_") != std::string::npos)
           continue;
-        }
-
-        // 2. Underwater Leak Check:
-        // Agar object ka name 'underwater_' se match hota hai aur position
-        // paani ke surface (Y = 0) ke niche hai, toh reflection pass mein draw
-        // mat karo!
         if (obj->position.y < -0.1f &&
-            obj->name.find("underwater_") != std::string::npos) {
+            obj->name.find("underwater_") != std::string::npos)
           continue;
-        }
-
-        // Render rest of the valid objects inverted
         obj->GetComponent<DrawableComponent>()->Draw();
       }
     }
 
     EndMode3D();
-    rlPopMatrix(); // CLEAN POP: 100% matrix safe leak proof!
+    rlPopMatrix();
     EndTextureMode();
   }
 
-  // ── 4. MAIN OPAQUE WORLD PASS (Draw into m_target) ───────────
+  // ── 4. MAIN OPAQUE WORLD PASS ────────────────────────────────
   BeginTextureMode(m_target);
   ClearBackground(RAYWHITE);
 
@@ -285,30 +261,25 @@ void Renderer::Render(GameObjectManager &scene, Camera &camera,
   rlEnableTexture(m_shadowMap.depth.id);
   rlSetUniform(shadowMapLoc, &slot, SHADER_UNIFORM_INT, 1);
 
-  scene.Draw(); // Standard world geometry pass
+  scene.Draw();
   EndMode3D();
   rlPopMatrix();
   EndTextureMode();
 
-  // ── 5. TRANSPARENT PASS (Draw water safely on top) ──────────────────
+  // ── 5. TRANSPARENT PASS ──────────────────────────────────────
   if (extraDraw3D) {
     BeginTextureMode(m_target);
     rlPushMatrix();
     BeginMode3D(camera);
 
-    rlDisableDepthMask(); // Keep depth writing disabled for transparency
-                          // transparency
-
-    // CRITICAL FIX: Overwrite Raylib's internal blend states.
-    // This tells OpenGL to preserve the absolute color calculations computed in
-    // your shader code!
+    rlDisableDepthMask();
     BeginBlendMode(BLEND_CUSTOM_SEPARATE);
     rlSetBlendFactorsSeparate(RL_SRC_ALPHA, RL_ONE_MINUS_SRC_ALPHA, RL_ONE,
-                              RL_ONE, RL_FUNC_ADD, RL_MAX); //
+                              RL_ONE, RL_FUNC_ADD, RL_MAX);
 
-    extraDraw3D(); // Draw water plane mesh beautifully
+    extraDraw3D();
 
-    EndBlendMode(); // Restore base engine blend states
+    EndBlendMode();
     rlEnableDepthMask();
 
     EndMode3D();
@@ -321,7 +292,14 @@ void Renderer::Render(GameObjectManager &scene, Camera &camera,
   if (postProcessingActive) {
     Shader activeShader = postProcessing.GetCurrentShader();
     int loc = GetShaderLocation(activeShader, "time");
-    SetShaderValue(activeShader, loc, &time, SHADER_UNIFORM_FLOAT);
+    if (loc != -1)
+      SetShaderValue(activeShader, loc, &time, SHADER_UNIFORM_FLOAT);
+
+    // Bind depth texture to slot 1 for shaders that ask for depth (such as fog)
+    int depthLoc = GetShaderLocation(activeShader, "depthTexture");
+    if (depthLoc != -1) {
+      SetShaderValueTexture(activeShader, depthLoc, m_target.depth);
+    }
 
     BeginShaderMode(activeShader);
     DrawTextureRec(m_target.texture,
@@ -339,8 +317,7 @@ void Renderer::Render(GameObjectManager &scene, Camera &camera,
 
 void Renderer::OnResize(int width, int height) {
   UnloadRenderTexture(m_target);
-  UnloadRenderTexture(m_reflectionTarget); // Add this
-  // m_target = LoadRenderTexture(width, height);
+  UnloadRenderTexture(m_reflectionTarget);
   m_target = LoadDepthRenderTexture(width, height);
   m_reflectionTarget = LoadRenderTexture(width, height);
 }
