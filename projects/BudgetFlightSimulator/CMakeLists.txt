@@ -13,6 +13,8 @@ set(GAME_SOURCES
     src/game/HangarSelectScene.cpp
     src/game/TerrainMap.cpp
     src/game/Ocean.cpp
+    src/game/MissionDatabase.cpp
+    src/game/MissionManager.cpp
 )
 
 # Create the executable
@@ -30,6 +32,9 @@ target_include_directories(BudgetFlightSimulator_run PUBLIC
 # Define resource directories
 set(RES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/resources)
 
+# Ensure DATA/MISSIONS directory exists in current binary directory before bundling
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/DATA/MISSIONS)
+
 # --- Asset Bundling (Scoped per Project Target) ---
 add_custom_command(
     OUTPUT
@@ -38,13 +43,16 @@ add_custom_command(
         ${CMAKE_CURRENT_BINARY_DIR}/city.bin
         ${CMAKE_CURRENT_BINARY_DIR}/houses.bin
         ${CMAKE_CURRENT_BINARY_DIR}/trees.bin
+        ${CMAKE_CURRENT_BINARY_DIR}/DATA/MISSIONS/missions.bin
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/DATA/MISSIONS
     COMMAND asset_bundler ${CMAKE_SOURCE_DIR}/include/engine/shader ${CMAKE_CURRENT_BINARY_DIR}/shaders.bin
     COMMAND asset_bundler ${RES_DIR}/planes ${CMAKE_CURRENT_BINARY_DIR}/planes.woosh
     COMMAND asset_bundler ${RES_DIR}/city ${CMAKE_CURRENT_BINARY_DIR}/city.bin
     COMMAND asset_bundler ${RES_DIR}/houses ${CMAKE_CURRENT_BINARY_DIR}/houses.bin
     COMMAND asset_bundler ${RES_DIR}/trees ${CMAKE_CURRENT_BINARY_DIR}/trees.bin
+    COMMAND asset_bundler ${RES_DIR}/missions ${CMAKE_CURRENT_BINARY_DIR}/DATA/MISSIONS/missions.bin
     DEPENDS asset_bundler
-    COMMENT "Packing BudgetFlightSimulator game assets (shaders, planes, city, houses, trees)"
+    COMMENT "Packing BudgetFlightSimulator game assets (shaders, planes, city, houses, trees, missions)"
 )
 
 # Use ${PROJECT_NAME}_BundleAssets to guarantee a globally unique target name
@@ -54,12 +62,14 @@ add_custom_target(${PROJECT_NAME}_BundleAssets ALL DEPENDS
     ${CMAKE_CURRENT_BINARY_DIR}/city.bin
     ${CMAKE_CURRENT_BINARY_DIR}/houses.bin
     ${CMAKE_CURRENT_BINARY_DIR}/trees.bin
+    ${CMAKE_CURRENT_BINARY_DIR}/DATA/MISSIONS/missions.bin
 )
 
 add_dependencies(BudgetFlightSimulator_run ${PROJECT_NAME}_BundleAssets)
 
 # --- Copy assets to build directory ---
 add_custom_command(TARGET BudgetFlightSimulator_run POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:BudgetFlightSimulator_run>/DATA/MISSIONS
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${CMAKE_CURRENT_BINARY_DIR}/shaders.bin
         $<TARGET_FILE_DIR:BudgetFlightSimulator_run>/shaders.bin
@@ -75,5 +85,8 @@ add_custom_command(TARGET BudgetFlightSimulator_run POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${CMAKE_CURRENT_BINARY_DIR}/trees.bin
         $<TARGET_FILE_DIR:BudgetFlightSimulator_run>/trees.bin
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_CURRENT_BINARY_DIR}/DATA/MISSIONS/missions.bin
+        $<TARGET_FILE_DIR:BudgetFlightSimulator_run>/DATA/MISSIONS/missions.bin
     COMMENT "Copying bundled assets to executable directory"
 )

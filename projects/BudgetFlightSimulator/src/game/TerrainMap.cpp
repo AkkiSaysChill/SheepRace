@@ -22,7 +22,7 @@ int TerrainMap::RandomInt(int min, int max) {
 }
 
 // =========================================================================
-// EXPANDED ISLAND & RUNWAY CONSTANTS
+// ISLAND & RUNWAY GEOGRAPHIC CONSTANTS
 // =========================================================================
 
 // 1. West City Island (Pushed out to -4500)
@@ -37,16 +37,30 @@ static const float kMountainRadius = 1600.0f;
 static const Vector2 kMegaCenter = {0.0f, 9500.0f};
 static const float kMegaRadius = 2800.0f;
 
-// Runway relocated with West Island
+// 4. South Runway Island (Pushed 8.0 km South of the central islands)
+static const Vector2 kSouthCenter = {0.0f, -8000.0f};
+static const float kSouthRadius = 1250.0f;
+
+// West Island Runway (East-West Aligned)
 static const float kRunwayCenterX = -4500.0f;
 static const float kRunwayCenterZ = 150.0f;
 static const float kRunwayHalfLen = 500.0f;
 static const float kRunwayHalfWid = 40.0f;
 static const float kRunwayElev = 110.0f;
 
+// South Island Runway (North-South Aligned, 1200m length)
+static const float kSouthRunwayCenterX = 0.0f;
+static const float kSouthRunwayCenterZ = -8000.0f;
+static const float kSouthRunwayHalfLen = 45.0f;  // Width along X
+static const float kSouthRunwayHalfWid = 600.0f; // Length along Z
+static const float kSouthRunwayElev = 22.0f;
+
 bool TerrainMap::IsInRunwayZone(float worldX, float worldZ) const {
-  return (fabsf(worldX - kRunwayCenterX) <= (kRunwayHalfLen + 60.0f) &&
-          fabsf(worldZ - kRunwayCenterZ) <= (kRunwayHalfWid + 60.0f));
+  bool inWest = (fabsf(worldX - kRunwayCenterX) <= (kRunwayHalfLen + 60.0f) &&
+                 fabsf(worldZ - kRunwayCenterZ) <= (kRunwayHalfWid + 60.0f));
+  bool inSouth = (fabsf(worldX - kSouthRunwayCenterX) <= (kSouthRunwayHalfLen + 60.0f) &&
+                  fabsf(worldZ - kSouthRunwayCenterZ) <= (kSouthRunwayHalfWid + 60.0f));
+  return inWest || inSouth;
 }
 
 // =========================================================================
@@ -142,6 +156,33 @@ float TerrainMap::GetHeightAt(float worldX, float worldZ) const {
       height = megaHeight;
   }
 
+  // 4. South Runway Island (~8.0 km South)
+  float dxS = worldX - kSouthCenter.x;
+  float dzS = worldZ - kSouthCenter.y;
+  float distSouth = sqrtf(dxS * dxS + dzS * dzS);
+
+  float angleSouth = atan2f(dzS, dxS);
+  float southCoastVar = sinf(angleSouth * 5.0f) * 75.0f + cosf(angleSouth * 8.0f) * 35.0f;
+  float effectiveSouthRadius = kSouthRadius + southCoastVar;
+
+  if (distSouth < effectiveSouthRadius) {
+    float norm = distSouth / effectiveSouthRadius;
+    float baseAtoll = powf(fmaxf(0.0f, 1.0f - norm), 0.45f) * 32.0f;
+    float s1 = sinf(worldX * 0.005f) * cosf(worldZ * 0.005f) * 8.0f;
+
+    // Runway plateau blend
+    float rx = fabsf(worldX - kSouthRunwayCenterX);
+    float rz = fabsf(worldZ - kSouthRunwayCenterZ);
+    float blendX = Clamp(1.0f - (rx - kSouthRunwayHalfLen) / 120.0f, 0.0f, 1.0f);
+    float blendZ = Clamp(1.0f - (rz - kSouthRunwayHalfWid) / 180.0f, 0.0f, 1.0f);
+    float plateauWeight = blendX * blendZ;
+    plateauWeight = plateauWeight * plateauWeight * (3.0f - 2.0f * plateauWeight);
+
+    float southHeight = Lerp(fmaxf(0.0f, baseAtoll + s1), kSouthRunwayElev, plateauWeight);
+    if (southHeight > height)
+      height = southHeight;
+  }
+
   return height;
 }
 
@@ -222,7 +263,7 @@ void TerrainMap::BuildIslandMesh(Model &outModel, Color tintColor,
   outModel.materials[0].maps[MATERIAL_MAP_ALBEDO].color = tintColor;
 }
 
-void TerrainMap::GenerateThreeIslands() {
+void TerrainMap::GenerateFourIslands() {
   BuildIslandMesh(m_cityIslandModel, Color{74, 132, 68, 255}, kCityCenter.x,
                   kCityCenter.y, kCityRadius, 150, false);
   BuildIslandMesh(m_mountainIslandModel, Color{78, 102, 75, 255},
@@ -230,12 +271,22 @@ void TerrainMap::GenerateThreeIslands() {
                   true);
   BuildIslandMesh(m_megaIslandModel, Color{68, 118, 72, 255}, kMegaCenter.x,
                   kMegaCenter.y, kMegaRadius, 190, true);
+  BuildIslandMesh(m_southIslandModel, Color{62, 120, 70, 255}, kSouthCenter.x,
+                  kSouthCenter.y, kSouthRadius, 130, false);
 
-  Mesh runwayMesh =
+  // West Runway (East-West)
+  Mesh westRunwayMesh =
       GenMeshCube(kRunwayHalfLen * 2.0f, 0.2f, kRunwayHalfWid * 2.0f);
-  m_runwayModel = LoadModelFromMesh(runwayMesh);
+  m_runwayModel = LoadModelFromMesh(westRunwayMesh);
   m_runwayModel.materials[0].maps[MATERIAL_MAP_ALBEDO].color =
       Color{38, 40, 44, 255};
+
+  // South Runway (North-South)
+  Mesh southRunwayMesh =
+      GenMeshCube(kSouthRunwayHalfLen * 2.0f, 0.2f, kSouthRunwayHalfWid * 2.0f);
+  m_southRunwayModel = LoadModelFromMesh(southRunwayMesh);
+  m_southRunwayModel.materials[0].maps[MATERIAL_MAP_ALBEDO].color =
+      Color{34, 36, 40, 255};
 
   m_terrainsGenerated = true;
 }
@@ -306,10 +357,10 @@ void TerrainMap::LoadAssetBundles(Engine *engine) {
 }
 
 // =========================================================================
-// DETERMINISTIC POPULATION
+// DETERMINISTIC POPULATION (Original Distribution Retained)
 // =========================================================================
 
-void TerrainMap::PopulateThreeIslands() {
+void TerrainMap::PopulateIslands() {
   m_seed = 987654;
   m_houseInstances.clear();
   m_natureInstances.clear();
@@ -559,6 +610,33 @@ void TerrainMap::PopulateThreeIslands() {
           {&m_natureModel, meshIdx, transform, {x, y, z}, 5.0f * scale});
     }
   }
+
+  // 5. SOUTH ATOLL NATURE (Isolated Coastal Flora)
+  if (m_natureLoaded && m_natureModel.meshCount > 0) {
+    for (int i = 0; i < 250; ++i) {
+      float dist = RandomFloat(50.0f, kSouthRadius * 0.80f);
+      float angle = RandomFloat(0.0f, 6.283185f);
+      float x = kSouthCenter.x + cosf(angle) * dist;
+      float z = kSouthCenter.y + sinf(angle) * dist;
+
+      if (IsInRunwayZone(x, z))
+        continue;
+
+      float y = GetHeightAt(x, z);
+      if (y < 5.0f || y > 30.0f)
+        continue;
+
+      int meshIdx = MESH_DECIDUOUS_START + RandomInt(0, MESH_DECIDUOUS_COUNT - 1);
+      meshIdx = std::clamp(meshIdx, 0, m_natureModel.meshCount - 1);
+      float scale = RandomFloat(1.0f, 1.5f);
+
+      Matrix rotScale = MatrixMultiply(MatrixScale(scale, scale, scale),
+                                       MatrixRotateY(RandomFloat(0.0f, 360.0f) * DEG2RAD));
+      Matrix transform = MatrixMultiply(rotScale, MatrixTranslate(x, y, z));
+      m_natureInstances.push_back(
+          {&m_natureModel, meshIdx, transform, {x, y, z}, 6.0f * scale});
+    }
+  }
 }
 
 // =========================================================================
@@ -567,14 +645,16 @@ void TerrainMap::PopulateThreeIslands() {
 
 void TerrainMap::LoadWorld(Engine *engine, const char *mapName) {
   LoadAssetBundles(engine);
-  GenerateThreeIslands();
-  PopulateThreeIslands();
+  GenerateFourIslands();
+  PopulateIslands();
+  DumpCalculatedLandmarks();
 }
 
 void TerrainMap::Draw(Shader shader) {
   if (!m_terrainsGenerated)
     return;
 
+  // 1. Island Meshes
   m_cityIslandModel.materials[0].shader = shader;
   DrawModel(m_cityIslandModel, {0.0f, 0.0f, 0.0f}, 1.0f, WHITE);
 
@@ -584,13 +664,21 @@ void TerrainMap::Draw(Shader shader) {
   m_megaIslandModel.materials[0].shader = shader;
   DrawModel(m_megaIslandModel, {0.0f, 0.0f, 0.0f}, 1.0f, WHITE);
 
+  m_southIslandModel.materials[0].shader = shader;
+  DrawModel(m_southIslandModel, {0.0f, 0.0f, 0.0f}, 1.0f, WHITE);
+
+  // 2. West Runway (East-West)
   m_runwayModel.materials[0].shader = shader;
   DrawModel(m_runwayModel,
             {kRunwayCenterX, kRunwayElev + 0.12f, kRunwayCenterZ}, 1.0f, WHITE);
+
+  // 3. South Runway (North-South)
+  m_southRunwayModel.materials[0].shader = shader;
+  DrawModel(m_southRunwayModel,
+            {kSouthRunwayCenterX, kSouthRunwayElev + 0.12f, kSouthRunwayCenterZ}, 1.0f, WHITE);
 }
 
 void TerrainMap::DrawProps(Camera3D camera) {
-  // Pushed far out to 7,500m -> 9,500m where objects occupy < 1 pixel
   const float HOUSE_FADE_START = 6500.0f;
   const float HOUSE_FADE_END = 8500.0f;
   const float MAX_HOUSE_DIST_SQ = HOUSE_FADE_END * HOUSE_FADE_END;
@@ -692,12 +780,25 @@ void TerrainMap::DrawProps(Camera3D camera) {
   }
 }
 
+void TerrainMap::DumpCalculatedLandmarks() const {
+  std::cout << "\n==================== EXACT TERRAIN MAP COORDINATES ====================\n";
+  std::cout << "WEST RUNWAY SPAWN:  <Position x=\"-4850.0\" y=\"" << kRunwayElev + 1.5f << "\" z=\"150.0\"/> (Heading: 90)\n";
+  std::cout << "SOUTH RUNWAY SPAWN: <Position x=\"0.0\" y=\"" << kSouthRunwayElev + 1.5f << "\" z=\"-8500.0\"/> (Heading: 0)\n";
+  std::cout << "SOUTH RUNWAY END:   <Position x=\"0.0\" y=\"" << kSouthRunwayElev + 1.5f << "\" z=\"-7500.0\"/> (Heading: 0)\n";
+  std::cout << "WEST CITY PEAK:     <Position x=\"" << kCityCenter.x << "\" y=\"" << GetHeightAt(kCityCenter.x, kCityCenter.y) << "\" z=\"" << kCityCenter.y << "\"/>\n";
+  std::cout << "EAST MOUNTAIN PEAK: <Position x=\"" << kMountainCenter.x << "\" y=\"" << GetHeightAt(kMountainCenter.x, kMountainCenter.y) << "\" z=\"" << kMountainCenter.y << "\"/>\n";
+  std::cout << "NORTH MEGA PEAK:    <Position x=\"" << kMegaCenter.x << "\" y=\"" << GetHeightAt(kMegaCenter.x, kMegaCenter.y + 1600.0f) << "\" z=\"" << kMegaCenter.y + 1600.0f << "\"/>\n";
+  std::cout << "=======================================================================\n" << std::endl;
+}
+
 void TerrainMap::Unload() {
   if (m_terrainsGenerated) {
     UnloadModel(m_cityIslandModel);
     UnloadModel(m_mountainIslandModel);
     UnloadModel(m_megaIslandModel);
+    UnloadModel(m_southIslandModel);
     UnloadModel(m_runwayModel);
+    UnloadModel(m_southRunwayModel);
     m_terrainsGenerated = false;
   }
   if (m_housesLoaded) {

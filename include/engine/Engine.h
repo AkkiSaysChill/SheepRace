@@ -8,6 +8,8 @@
 #include "engine/TextManager.h"
 #include "engine/asset_loader.hpp"
 #include "raylib.h"
+#include "engine/DayNightCycle.h"
+#include "engine/WeatherSystem.h"
 
 class Engine {
 public:
@@ -30,9 +32,16 @@ public:
   TextManager &GetTextManager() { return m_textManager; }
   bool PostProcessingActive = false;
 
+  DayNightCycle& GetDayNightCycle() { return m_dayNightCycle; }
+
+  WeatherSystem& GetWeatherSystem() { return m_weatherSystem; }
+
 private:
   int m_screenWidth;
   int m_screenHeight;
+  
+  DayNightCycle m_dayNightCycle;
+  WeatherSystem m_weatherSystem;
 
   TextManager m_textManager;
 

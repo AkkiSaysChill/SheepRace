@@ -3,7 +3,11 @@
 
 Aircraft::Aircraft() { Reset({0.0f, 150.0f, 0.0f}); }
 
-void Aircraft::SetStats(const AircraftStats &newStats) { stats = newStats; }
+void Aircraft::SetStats(const AircraftStats &newStats) { 
+    stats = newStats; 
+    missileAmmo = stats.maxMissiles;
+    health = 100.0f;
+}
 
 void Aircraft::Reset(Vector3 spawnPos) {
   position = spawnPos;
@@ -15,6 +19,59 @@ void Aircraft::Reset(Vector3 spawnPos) {
   isStalling = false;
   isOnGround = false;
   currentGForce = 1.0f;
+  health = 100.0f;
+  missileAmmo = stats.maxMissiles;
+  minigunCooldown = 0.0f;
+  missileCooldown = 0.0f;
+}
+
+void Aircraft::UpdateWeaponTimers(float dt) {
+    if (minigunCooldown > 0.0f) minigunCooldown -= dt;
+    if (missileCooldown > 0.0f) missileCooldown -= dt;
+}
+
+bool Aircraft::FireMinigun(std::vector<BulletTracer>& outBullets) {
+    if (!stats.hasWeapons || minigunCooldown > 0.0f) return false;
+
+    minigunCooldown = stats.minigunFireRate;
+    Vector3 fwd = GetForward();
+    Vector3 rgt = GetRight();
+
+    for (float side : { -1.8f, 1.8f }) {
+        BulletTracer b;
+        b.position = Vector3Add(position, Vector3Scale(rgt, side));
+        b.velocity = Vector3Add(Vector3Scale(fwd, stats.bulletSpeed), velocity);
+        b.life = 1.6f;
+        b.isEnemy = false;
+        b.active = true;
+        outBullets.push_back(b);
+    }
+    return true;
+}
+
+bool Aircraft::FireMissile(std::vector<HomingMissile>& outMissiles, const Vector3& lockedTargetPos) {
+    if (!stats.hasWeapons || missileCooldown > 0.0f || missileAmmo <= 0) return false;
+
+    missileCooldown = stats.missileCooldownTime;
+    missileAmmo--;
+
+    Vector3 fwd = GetForward();
+    Vector3 down = Vector3Negate(GetUp());
+
+    HomingMissile m;
+    m.position = Vector3Add(position, Vector3Scale(down, 1.8f));
+    m.velocity = Vector3Add(Vector3Scale(fwd, 120.0f), velocity);
+    m.targetPos = lockedTargetPos;
+    m.isTrackingPlayer = false;
+    m.speed = 340.0f;
+    m.turnRate = 3.2f;
+    m.life = 6.0f;
+    m.blastRadius = 38.0f;
+    m.damage = 100.0f;
+    m.active = true;
+
+    outMissiles.push_back(m);
+    return true;
 }
 
 Vector3 Aircraft::GetForward() const {
@@ -70,7 +127,6 @@ void Aircraft::Update(const FlightInput &input, float dt) {
   float currentSpeed = Vector3Length(velocity);
   float currentPitchDeg = GetPitchAngle();
 
-  // Inverted state factor
   bool isInverted = (up.y < 0.0f) && (!isOnGround);
   float invertedFactor = isInverted ? fabsf(up.y) : 0.0f;
 
@@ -111,23 +167,18 @@ void Aircraft::Update(const FlightInput &input, float dt) {
   float targetRollRate = input.roll * stats.rollRate * controlAuthority;
   float targetYawRate = input.yaw * stats.yawRate * controlAuthority;
 
-  // Side-slip yaw torque during banking
   float bankAmount = fabsf(right.y);
   if (bankAmount > 0.12f && !isStalling) {
     float slipTorque = right.y * stats.bankNoseSlip * controlAuthority;
     targetYawRate += slipTorque;
   }
 
-  // Gentle Inverted Gravity Torque:
-  // Uses smooth damping (0.32f) and tapers off as the nose drops below the
-  // horizon
   if (isInverted) {
     float horizonAllowance = Clamp(forward.y + 0.3f, 0.0f, 1.0f);
     float gentleNoseDrop = 0.32f * invertedFactor * horizonAllowance;
     targetPitchRate += gentleNoseDrop;
   }
 
-  // Stall nose drop
   float pitchBlendSpeed = stats.pitchInertia;
   if (isStalling && !isOnGround) {
     if (targetPitchRate > 0.0f && !isInverted) {
@@ -172,7 +223,6 @@ void Aircraft::Update(const FlightInput &input, float dt) {
     velocity = Vector3Scale(forward, currentSpeed);
 
     if (!isOnGround) {
-      // Glide sink when unpowered
       if (input.throttle < 0.05f) {
         if (velocity.y > 0.0f) {
           velocity.y = Lerp(velocity.y, -8.0f * forward.y, 4.0f * dt);
@@ -182,7 +232,6 @@ void Aircraft::Update(const FlightInput &input, float dt) {
         }
       }
 
-      // Bank sink during turns
       if (bankAmount > 0.15f) {
         float throttleFactor = Clamp(1.0f - input.throttle, 0.10f, 1.0f);
         float bankSink =
@@ -192,7 +241,6 @@ void Aircraft::Update(const FlightInput &input, float dt) {
         velocity.y -= bankSink;
       }
 
-      // Smooth, gradual inverted glide sink
       if (isInverted) {
         float gentleInvertedSink = (4.5f * invertedFactor) *
                                    (1.0f - Clamp(forward.y * 3.0f, 0.0f, 1.0f));

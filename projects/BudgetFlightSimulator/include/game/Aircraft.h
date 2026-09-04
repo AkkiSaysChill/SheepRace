@@ -1,7 +1,9 @@
 #pragma once
 #include "raylib.h"
 #include "raymath.h"
+#include "game/CombatEntities.h"
 #include <string>
+#include <vector>
 
 struct FlightInput {
     float pitch = 0.0f;
@@ -29,6 +31,14 @@ struct AircraftStats {
     float yawRate = 0.55f;
     float pitchInertia = 1.8f;
     float bankNoseSlip = 0.35f;
+
+    // Weapon capabilities
+    bool hasWeapons = false;
+    float minigunFireRate = 0.06f; // ~16 rounds/sec
+    float bulletSpeed = 1100.0f;
+    float bulletDamage = 18.0f;
+    float missileCooldownTime = 2.5f;
+    int maxMissiles = 6;
 };
 
 class Aircraft {
@@ -45,10 +55,20 @@ public:
     bool isStalling = false;
     bool isOnGround = false;
     float currentGForce = 1.0f;
+    float health = 100.0f;
+    int missileAmmo = 6;
+
+    // Weapon cooldown states
+    float minigunCooldown = 0.0f;
+    float missileCooldown = 0.0f;
 
     void SetStats(const AircraftStats& newStats);
     void Update(const FlightInput& input, float dt);
     void Reset(Vector3 spawnPos);
+
+    bool FireMinigun(std::vector<BulletTracer>& outBullets);
+    bool FireMissile(std::vector<HomingMissile>& outMissiles, const Vector3& lockedTargetPos);
+    void UpdateWeaponTimers(float dt);
 
     Vector3 GetForward() const;
     Vector3 GetUp() const;

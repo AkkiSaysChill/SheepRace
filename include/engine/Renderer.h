@@ -27,6 +27,7 @@ public:
   RenderTexture2D GetReflectionTarget() const { return m_reflectionTarget; }
 
   Vector3 GetSkySunVector() const { return m_currentSkySunVector; }
+  Shader GetSkyShader() const { return m_skyShader; }
 
 private:
   Shader m_shadowShader;

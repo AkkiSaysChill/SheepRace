@@ -114,9 +114,12 @@ void Renderer::Render(GameObjectManager &scene, Camera &camera,
   SetShaderValue(m_shadowShader, m_shadowShader.locs[SHADER_LOC_VECTOR_VIEW],
                  &cameraPos, SHADER_UNIFORM_VEC3);
 
+  // Keep sky direction pointing toward the celestial body in the sky
   m_currentSkySunVector = Vector3Negate(lightDir);
-  SetShaderValue(m_skyShader, GetShaderLocation(m_skyShader, "u_lightDir"),
-                 &m_currentSkySunVector, SHADER_UNIFORM_VEC3);
+  int skySunLoc = GetShaderLocation(m_skyShader, "u_lightDir");
+  if (skySunLoc != -1) {
+    SetShaderValue(m_skyShader, skySunLoc, &m_currentSkySunVector, SHADER_UNIFORM_VEC3);
+  }
 
   // ── 1. SHADOW MAP PASS ───────────────────────────────────────
   Matrix lightView, lightProj;
@@ -159,9 +162,7 @@ void Renderer::Render(GameObjectManager &scene, Camera &camera,
                  resolutionValues, SHADER_UNIFORM_VEC2);
   SetShaderValueTexture(
       m_skyShader, GetShaderLocation(m_skyShader, "iChannel0"), m_noiseTexture);
-  Vector3 skySunVector = Vector3Negate(lightDir);
-  SetShaderValue(m_skyShader, GetShaderLocation(m_skyShader, "u_lightDir"),
-                 &skySunVector, SHADER_UNIFORM_VEC3);
+
   SetShaderValue(m_skyShader, GetShaderLocation(m_skyShader, "u_cloudCover"),
                  &cloudCover, SHADER_UNIFORM_FLOAT);
   SetShaderValue(m_skyShader, GetShaderLocation(m_skyShader, "u_cloudFalloff"),
@@ -295,7 +296,6 @@ void Renderer::Render(GameObjectManager &scene, Camera &camera,
     if (loc != -1)
       SetShaderValue(activeShader, loc, &time, SHADER_UNIFORM_FLOAT);
 
-    // Bind depth texture to slot 1 for shaders that ask for depth (such as fog)
     int depthLoc = GetShaderLocation(activeShader, "depthTexture");
     if (depthLoc != -1) {
       SetShaderValueTexture(activeShader, depthLoc, m_target.depth);

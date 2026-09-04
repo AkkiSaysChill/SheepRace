@@ -25,6 +25,7 @@ void Engine::Initialize() {
   m_postProcessing = new PostProcessing(m_assetLoader);
 
   m_sceneManager.Initialize(this);
+  m_weatherSystem.Initialize(1400);
 
   m_camera.up = {0.0f, 1.0f, 0.0f};
   m_camera.projection = CAMERA_PERSPECTIVE;
@@ -68,13 +69,17 @@ void Engine::Run() {
     //
     Scene *activeScene = m_sceneManager.GetActiveScene();
     if (activeScene) {
-      Vector3 lightDir = Vector3Normalize({0.5f, -0.6f, -0.4f});
+      auto& dayNightLighting = m_dayNightCycle.GetCurrentLighting();
+      auto& weather = m_weatherSystem.GetActiveProfile();
+
+      Vector3 lightDir = dayNightLighting.lightDir;
 
       float shininess = 16.0f;
-      float specStrength = 0.15f;
+      float specStrength = 0.15f * weather.sunDimFactor;
 
-      float cloudCover = 0.4f;
-      float cloudFalloff = 0.8f;
+      // Dynamic blend of DayNight clouds and Weather preset cloud cover
+      float cloudCover = std::clamp(weather.cloudCover, 0.05f, 0.98f);
+      float cloudFalloff = weather.cloudFalloff;
 
       float lightOrthoSize = 650.0f;
 

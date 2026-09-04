@@ -21,6 +21,7 @@
     <Plane id="jet_mk2">
         <Name>Stealth Fighter Mk2</Name>
         <ModelFile>jet_mk2.glb</ModelFile>
+        <HasWeapons>true</HasWeapons>
         <MaxThrustSpeed>175.0</MaxThrustSpeed>
         <StallSpeedThreshold>30.0</StallSpeedThreshold>
         <ThrottleResponse>16.0</ThrottleResponse>

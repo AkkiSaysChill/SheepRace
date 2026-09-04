@@ -1,0 +1,220 @@
+<Missions>
+    <!-- Mission 1: Civilian VFR Certification at Dawn -->
+    <Mission id="flight_training_01" 
+             title="Island Maiden Flight" 
+             plane="trainer" 
+             description="Master runway liftoff, coast around West City Island, and land back on the main strip.">
+        <Spawn x="-4850.0" y="111.5" z="150.0" heading="90.0"/>
+        <Environment time="7.5" weather="CLEAR"/>
+        
+        <Stage type="TAKEOFF" description="Rotate and climb above 140m heading East">
+            <Position x="-4200.0" y="140.0" z="150.0"/>
+            <Radius>350.0</Radius>
+            <MinSpeed>135.0</MinSpeed>
+            <MinAltitude>140.0</MinAltitude>
+        </Stage>
+
+        <Stage type="RING_GATE" description="Fly through Coastal Rock Arch">
+            <Position x="-3200.0" y="170.0" z="450.0"/>
+            <Radius>80.0</Radius>
+        </Stage>
+
+        <Stage type="WAYPOINT" description="Round the Southern Headland">
+            <Position x="-4200.0" y="200.0" z="-950.0"/>
+            <Radius>220.0</Radius>
+        </Stage>
+
+        <Stage type="RING_GATE" description="Align on final approach glideslope">
+            <Position x="-5500.0" y="160.0" z="150.0"/>
+            <Radius>75.0</Radius>
+        </Stage>
+
+        <Stage type="LANDING" description="Touch down on West Island Runway">
+            <Position x="-4500.0" y="111.5" z="150.0"/>
+            <Radius>250.0</Radius>
+            <MaxSpeed>180.0</MaxSpeed>
+        </Stage>
+    </Mission>
+
+    <!-- Mission 2: Regional Island Hop -->
+    <Mission id="island_commuter_run" 
+             title="Cross-Channel Commuter" 
+             plane="airport_airplane" 
+             description="Fly passenger charter from West Runway across the open ocean gap to the isolated South Atoll.">
+        <Spawn x="-4850.0" y="111.5" z="150.0" heading="90.0"/>
+        <Environment time="12.0" weather="PARTLY_CLOUDY"/>
+        
+        <Stage type="TAKEOFF" description="Climb out over West Bay">
+            <Position x="-4100.0" y="160.0" z="150.0"/>
+            <Radius>400.0</Radius>
+            <MinSpeed>160.0</MinSpeed>
+            <MinAltitude>150.0</MinAltitude>
+        </Stage>
+
+        <Stage type="WAYPOINT" description="Mid-Ocean Navigation Beacon Alpha">
+            <Position x="-2200.0" y="320.0" z="-3800.0"/>
+            <Radius>260.0</Radius>
+        </Stage>
+
+        <Stage type="RING_GATE" description="Intercept South Runway Northbound Approach Gate">
+            <Position x="0.0" y="110.0" z="-9200.0"/>
+            <Radius>90.0</Radius>
+        </Stage>
+
+        <Stage type="LANDING" description="Land on South Island Runway heading North">
+            <Position x="0.0" y="23.5" z="-8000.0"/>
+            <Radius>300.0</Radius>
+            <MaxSpeed>205.0</MaxSpeed>
+        </Stage>
+    </Mission>
+
+    <!-- Mission 3: Amphibious Sea Rescue -->
+    <Mission id="sea_rescue_03" 
+             title="Operation Cove Lifeline" 
+             plane="sea_duck" 
+             description="Take off from South Atoll, scout the deep mountain cove on East Island, and splash down.">
+        <Spawn x="0.0" y="23.5" z="-8500.0" heading="0.0"/>
+        <Environment time="16.5" weather="OVERCAST"/>
+        
+        <Stage type="TAKEOFF" description="Liftoff heading North from South Atoll">
+            <Position x="0.0" y="80.0" z="-7500.0"/>
+            <Radius>350.0</Radius>
+            <MinSpeed>145.0</MinSpeed>
+            <MinAltitude>60.0</MinAltitude>
+        </Stage>
+
+        <Stage type="WAYPOINT" description="Transit through Central Ocean Channel">
+            <Position x="2200.0" y="220.0" z="-4000.0"/>
+            <Radius>250.0</Radius>
+        </Stage>
+
+        <Stage type="RING_GATE" description="Low pass between Mountain Sea Stacks">
+            <Position x="3800.0" y="90.0" z="-1200.0"/>
+            <Radius>70.0</Radius>
+        </Stage>
+
+        <Stage type="LANDING" description="Water splashdown in the sheltered East Mountain Bay">
+            <Position x="4500.0" y="1.5" z="-1400.0"/>
+            <Radius>260.0</Radius>
+            <MaxSpeed>165.0</MaxSpeed>
+        </Stage>
+    </Mission>
+
+    <!-- Mission 4: Long-Range Cargo Storm Airdrop -->
+    <Mission id="north_ridge_airdrop" 
+             title="Operation Arctic Crest" 
+             plane="cargo" 
+             description="Take off into torrential midnight rain, cross 17km of ocean, drop cargo over Mega Harbor, and divert to West.">
+        <Spawn x="0.0" y="23.5" z="-8500.0" heading="0.0"/>
+        <Environment time="23.0" weather="STORMY_RAIN"/>
+
+        <Stage type="TAKEOFF" description="Heavy climb out through stormy headwind">
+            <Position x="0.0" y="120.0" z="-7200.0"/>
+            <Radius>450.0</Radius>
+            <MinSpeed>180.0</MinSpeed>
+            <MinAltitude>90.0</MinAltitude>
+        </Stage>
+
+        <Stage type="WAYPOINT" description="Transit Corridor Beacon over Central Channel">
+            <Position x="0.0" y="350.0" z="1500.0"/>
+            <Radius>350.0</Radius>
+        </Stage>
+
+        <Stage type="DROP_PAYLOAD" event="DROP_CARGO" description="Deploy Relief Container over Mega Island Settlement">
+            <Position x="-300.0" y="170.0" z="8500.0"/>
+            <Radius>260.0</Radius>
+        </Stage>
+
+        <Stage type="WAYPOINT" description="Turn Southwest toward West Island diversion vector">
+            <Position x="-2500.0" y="450.0" z="4200.0"/>
+            <Radius>350.0</Radius>
+        </Stage>
+
+        <Stage type="RING_GATE" description="West Runway Downwind Intercept Gate">
+            <Position x="-5500.0" y="180.0" z="150.0"/>
+            <Radius>95.0</Radius>
+        </Stage>
+
+        <Stage type="LANDING" description="Storm landing on West Island Runway">
+            <Position x="-4500.0" y="111.5" z="150.0"/>
+            <Radius>300.0</Radius>
+            <MaxSpeed>225.0</MaxSpeed>
+        </Stage>
+    </Mission>
+
+    <!-- Mission 5: Deadstick Airliner Flameout in Dense Fog -->
+    <Mission id="engine_out_glide" 
+             title="Deadstick Through the Soup" 
+             plane="commercial_airliner" 
+             description="Mid-air emergency: All engines flame out inside zero-visibility sea fog over the central ridge.">
+        <Spawn x="-1500.0" y="780.0" z="800.0" heading="260.0"/>
+        <Environment time="5.5" weather="DENSE_FOG"/>
+
+        <Stage type="EVENT_TRIGGER" event="ENGINE_FAIL" description="Enter fog bank (ENGINES FLAME OUT - GLIDE TO SAFETY)">
+            <Position x="-2100.0" y="680.0" z="600.0"/>
+            <Radius>180.0</Radius>
+        </Stage>
+
+        <Stage type="RING_GATE" description="Maintain optimal 180 km/h sink rate through Gate 1">
+            <Position x="-3100.0" y="420.0" z="400.0"/>
+            <Radius>80.0</Radius>
+        </Stage>
+
+        <Stage type="RING_GATE" description="Glide slope turn through Gate 2">
+            <Position x="-5600.0" y="210.0" z="150.0"/>
+            <Radius>75.0</Radius>
+        </Stage>
+
+        <Stage type="LANDING" description="Emergency deadstick rollout on West Runway">
+            <Position x="-4500.0" y="111.5" z="150.0"/>
+            <Radius>260.0</Radius>
+            <MaxSpeed>215.0</MaxSpeed>
+        </Stage>
+    </Mission>
+
+    <!-- Mission 6: Supersonic Intercept & Dogfight -->
+    <Mission id="canyon_strike_02" 
+             title="Operation Thunder Dart" 
+             plane="jet_mk2" 
+             description="Sunset scramble: Supersonic canyon dash and aerial dogfight against hostile Crimson Ace.">
+        <Spawn x="-4850.0" y="111.5" z="150.0" heading="90.0"/>
+        <Environment time="19.2" weather="PARTLY_CLOUDY"/>
+        
+        <!-- Scripted Combat Enemies -->
+        <Enemies>
+            <Enemy id="crimson_ace" name="Crimson Phantom Ace" type="AIR_PATROL" targetStage="2">
+                <Position x="1800.0" y="480.0" z="1400.0"/>
+                <Health>150.0</Health>
+                <Radius>25.0</Radius>
+                <Speed>140.0</Speed>
+            </Enemy>
+        </Enemies>
+
+        <Stage type="TAKEOFF" description="Full afterburner rotation heading East">
+            <Position x="-4100.0" y="180.0" z="150.0"/>
+            <Radius>400.0</Radius>
+            <MinSpeed>260.0</MinSpeed>
+            <MinAltitude>170.0</MinAltitude>
+        </Stage>
+
+        <Stage type="RING_GATE" description="Canyon Entry Gap 1">
+            <Position x="-2400.0" y="250.0" z="600.0"/>
+            <Radius>60.0</Radius>
+        </Stage>
+
+        <Stage type="TARGET_STRIKE" event="DESTROY_TARGET" description="Splash the Hostile Crimson Ace (Minigun / Missiles)">
+            <Position x="1800.0" y="480.0" z="1400.0"/>
+            <Radius>160.0</Radius>
+        </Stage>
+
+        <Stage type="RING_GATE" description="High-G Split-S around Mountain Peak">
+            <Position x="3800.0" y="480.0" z="500.0"/>
+            <Radius>65.0</Radius>
+        </Stage>
+
+        <Stage type="WAYPOINT" description="Supersonic pull-up into sunset">
+            <Position x="5500.0" y="700.0" z="-2500.0"/>
+            <Radius>300.0</Radius>
+        </Stage>
+    </Mission>
+</Missions>

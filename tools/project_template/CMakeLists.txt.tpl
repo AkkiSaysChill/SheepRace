@@ -19,6 +19,3 @@ target_include_directories(%%PROJECT_NAME%%_run PUBLIC
     "include"
     "../../include"
 )
-
-# Copy assets (if any) - you can add more files here
-# file(COPY resources/ DESTINATION ${CMAKE_BINARY_DIR}/)

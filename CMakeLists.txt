@@ -80,6 +80,8 @@ set(ENGINE_SOURCES
     src/engine/levelEditor.cpp
     src/engine/TextManager.cpp
     src/engine/VisualLogicEditor.cpp
+    src/engine/DayNightCycle.cpp
+    src/engine/WeatherSystem.cpp
 )
 
 set(IMGUI_SOURCES
