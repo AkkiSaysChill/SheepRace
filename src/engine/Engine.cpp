@@ -15,6 +15,9 @@ void Engine::Initialize() {
   SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT);
   InitWindow(m_screenWidth, m_screenHeight, "Sheep Race");
   SetTargetFPS(60);
+  ChangeDirectory(GetApplicationDirectory());
+  SetExitKey(KEY_NULL);
+
   rlImGuiSetup(true);
 
   m_assetLoader.loadPackedFile("shaders.bin");
@@ -52,6 +55,11 @@ void Engine::Run() {
     float dt = GetFrameTime();
     m_sceneManager.Update(dt);
 
+    // If an Exit button was pressed during Update, break out BEFORE rendering!
+    if (ShouldQuit()) {
+      break;
+    }
+
     // ── Render frame ───────────────────────────────────────────
     // NOTE: BeginDrawing() is now called INSIDE Renderer::Render(),
     // right before the final blit, so the flow is:
@@ -69,8 +77,8 @@ void Engine::Run() {
     //
     Scene *activeScene = m_sceneManager.GetActiveScene();
     if (activeScene) {
-      auto& dayNightLighting = m_dayNightCycle.GetCurrentLighting();
-      auto& weather = m_weatherSystem.GetActiveProfile();
+      auto &dayNightLighting = m_dayNightCycle.GetCurrentLighting();
+      auto &weather = m_weatherSystem.GetActiveProfile();
 
       Vector3 lightDir = dayNightLighting.lightDir;
 

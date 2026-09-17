@@ -9,6 +9,7 @@ public:
   }
 
   std::string selectedPlaneId = "trainer";
+  std::string activeMissionId;
 
 private:
   FlightSession() = default;

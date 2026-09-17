@@ -24,15 +24,23 @@ public:
 
 private:
   Camera3D m_camera = {0};
-
-  float m_distance = 14.0f;
-  float m_baseDistance = 14.0f;
-  float m_minDistance = 5.0f;
+  float m_smoothedSpeedFactor = 0.0f;
+  // Distance & Framing
+  float m_distance = 15.0f;
+  float m_baseDistance = 15.0f;
+  float m_minDistance = 6.0f;
   float m_maxDistance = 120.0f;
-  float m_targetHeightOffset = 1.2f;
+  float m_targetHeightOffset = 2.4f;
 
-  float m_pitch = 12.0f;
-  float m_yaw = 0.0f;
-  Vector2 m_prevMousePos = {0.0f, 0.0f};
-  bool m_isOrbiting = false;
+  float m_freeLookYaw = 0.0f;   // Radians
+  float m_freeLookPitch = 0.0f; // Radians
+  bool m_isFreeLooking = false;
+
+  // Smoothed internal states (Prevents sub-frame physics vibration)
+  Vector3 m_smoothPosition = {0.0f, 0.0f, 0.0f};
+  Vector3 m_smoothTarget = {0.0f, 0.0f, 0.0f};
+  Vector3 m_smoothUp = {0.0f, 1.0f, 0.0f};
+  float m_baseFov = 55.0f;
+  float m_currentFov = 55.0f;
+  bool m_initialized = false;
 };

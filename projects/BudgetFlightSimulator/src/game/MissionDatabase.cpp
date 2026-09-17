@@ -44,6 +44,7 @@ bool MissionDatabase::LoadFromMemory(const char* buffer, size_t size) {
         mission.title = misElem->Attribute("title") ? misElem->Attribute("title") : "Untitled Mission";
         mission.description = misElem->Attribute("description") ? misElem->Attribute("description") : "";
         mission.requiredPlaneId = misElem->Attribute("plane") ? misElem->Attribute("plane") : "";
+        mission.hasRadar = misElem->BoolAttribute("radar", false);
         mission.environmentTime = 12.0f;
         mission.environmentWeather = "CLEAR";
         mission.spawnPosition = { -4850.0f, 111.5f, 150.0f };

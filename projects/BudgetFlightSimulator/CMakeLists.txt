@@ -15,6 +15,7 @@ set(GAME_SOURCES
     src/game/Ocean.cpp
     src/game/MissionDatabase.cpp
     src/game/MissionManager.cpp
+    src/game/MissionSelectScene.cpp
 )
 
 # Create the executable

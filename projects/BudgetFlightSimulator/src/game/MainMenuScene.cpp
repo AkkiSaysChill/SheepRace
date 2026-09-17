@@ -55,19 +55,24 @@ void MainMenuScene::Update(float deltaTime) {
 
   bool selectTriggered = IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE);
 
-  // Option 0: Quick Flight
-  if ((selectTriggered && m_selectedOption == 0)) {
+  // Option 0: Campaign Mission Select
+  if (selectTriggered && m_selectedOption == 0) {
+    m_engine->GetSceneManager().LoadScene("MissionSelectScene");
+  }
+
+  // Option 1: Quick Flight / Free Flight
+  if (selectTriggered && m_selectedOption == 1) {
     m_engine->GetSceneManager().LoadScene("FlightScene");
   }
 
-  // Option 1: Hangar / Plane Selector
-  if ((selectTriggered && m_selectedOption == 1)) {
+  // Option 2: Hangar / Plane Selector
+  if (selectTriggered && m_selectedOption == 2) {
     m_engine->GetSceneManager().LoadScene("HangarScene");
   }
 
-  // Option 2: Exit
-  if ((selectTriggered && m_selectedOption == 2) || IsKeyPressed(KEY_ESCAPE)) {
-    CloseWindow();
+  // Option 3: Exit
+  if ((selectTriggered && m_selectedOption == 3)) {
+    m_engine->RequestExit();
   }
 }
 
@@ -94,24 +99,30 @@ void MainMenuScene::Draw() {
 
   // Menu Buttons
   float btnWidth = 320.0f;
-  float btnHeight = 50.0f;
-  float startY = screenH * 0.45f;
-  float gap = 20.0f;
+  float btnHeight = 46.0f;
+  float startY = screenH * 0.40f;
+  float gap = 16.0f;
 
-  Rectangle btnFly = {(screenW - btnWidth) / 2.0f, startY, btnWidth, btnHeight};
+  Rectangle btnCampaign = {(screenW - btnWidth) / 2.0f, startY, btnWidth,
+                           btnHeight};
+  Rectangle btnFly = {(screenW - btnWidth) / 2.0f, startY + (btnHeight + gap),
+                      btnWidth, btnHeight};
   Rectangle btnHangar = {(screenW - btnWidth) / 2.0f,
-                         startY + (btnHeight + gap), btnWidth, btnHeight};
+                         startY + (btnHeight + gap) * 2, btnWidth, btnHeight};
   Rectangle btnExit = {(screenW - btnWidth) / 2.0f,
-                       startY + (btnHeight + gap) * 2, btnWidth, btnHeight};
+                       startY + (btnHeight + gap) * 3, btnWidth, btnHeight};
 
-  if (DrawButton("FLY TEST SCENE", btnFly, m_selectedOption == 0)) {
+  if (DrawButton("CAMPAIGN MISSIONS", btnCampaign, m_selectedOption == 0)) {
+    m_engine->GetSceneManager().LoadScene("MissionSelectScene");
+  }
+  if (DrawButton("FREE FLIGHT", btnFly, m_selectedOption == 1)) {
     m_engine->GetSceneManager().LoadScene("FlightScene");
   }
-  if (DrawButton("SELECT AIRCRAFT", btnHangar, m_selectedOption == 1)) {
+  if (DrawButton("SELECT AIRCRAFT", btnHangar, m_selectedOption == 2)) {
     m_engine->GetSceneManager().LoadScene("HangarScene");
   }
-  if (DrawButton("EXIT TO DESKTOP", btnExit, m_selectedOption == 2)) {
-    CloseWindow();
+  if (DrawButton("EXIT TO DESKTOP", btnExit, m_selectedOption == 3)) {
+    m_engine->RequestExit();
   }
 
   // Footer Info

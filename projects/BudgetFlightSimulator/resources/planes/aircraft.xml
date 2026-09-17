@@ -72,6 +72,9 @@
         <PitchInertia>0.95</PitchInertia>
         <BankNoseSlip>0.40</BankNoseSlip>
     </Plane>
+<!-- removing the airport_airplane plane for now, as it was 
+causing issues the propellor animation. It can be 
+re-added later if needed.
 
     <Plane id="airport_airplane">
         <Name>Regional Commuter</Name>
@@ -90,6 +93,7 @@
         <PitchInertia>1.4</PitchInertia>
         <BankNoseSlip>0.32</BankNoseSlip>
     </Plane>
+-->
 
     <Plane id="airport_airplane_3">
         <Name>Tri-Engine Jetliner</Name>

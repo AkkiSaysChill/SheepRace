@@ -55,7 +55,7 @@ struct MissionData {
     float spawnHeading = 90.0f; // Degrees (0 = North, 90 = East)
     float environmentTime = 12.0f;
     std::string environmentWeather = "CLEAR";
-    
+    bool hasRadar = false;
     std::vector<MissionStage> stages;
     std::vector<EnemyData> enemies;
 };

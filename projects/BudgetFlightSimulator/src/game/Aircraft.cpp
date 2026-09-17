@@ -263,18 +263,13 @@ void Aircraft::Update(const FlightInput &input, float dt) {
   currentGForce = 1.0f + (angularVelocity.x * (currentSpeed / 30.0f));
 
   // 4. Ground Collision
-  const float groundLevel = 2.0f;
-  if (position.y <= groundLevel) {
-    position.y = groundLevel;
-    isOnGround = true;
-
-    if (velocity.y < 0.0f)
-      velocity.y = 0.0f;
-
+  // 4. Ground state is driven by the scene's terrain heightmap
+  // (Do not clamp to 2.0f here, as runway is at 111.5m!)
+  if (isOnGround) {
+    if (velocity.y < 0.0f) velocity.y = 0.0f;
     float friction = input.brake ? 0.70f : 0.985f;
     velocity.x *= friction;
     velocity.z *= friction;
-
     angularVelocity = {0.0f, 0.0f, 0.0f};
   } else {
     isOnGround = false;

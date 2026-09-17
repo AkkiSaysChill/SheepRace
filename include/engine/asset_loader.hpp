@@ -27,7 +27,6 @@ public:
   bool loadPackedFile(const std::filesystem::path &packedFilePath);
   std::vector<char> getAssetData(const std::string &assetName);
   std::map<std::string, AssetInfo> listAssets() const;
-  void UnloadModelAndCleanTempFile(Model model);
 
   ModelAnimation *LoadAnimationsFromAssetData(const std::vector<char> &data,
                                               int *animCount);
