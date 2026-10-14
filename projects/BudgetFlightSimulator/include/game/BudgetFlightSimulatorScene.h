@@ -128,4 +128,30 @@ private:
   // Emergency Engine Failure State
   bool m_engineFailed = false;
   float m_engineSmokeTimer = 0.0f;
+
+  Sound m_sndExplosion = {0};
+  Sound m_sndMissile = {0};
+  Sound m_sndMinigun = {0};
+  Music m_sndRain = {0};
+  Sound m_sndStall = {0};
+  Sound m_sndClick = {0};
+
+  enum CinematicCameraMode {
+    CINEMATIC_ORBIT = 0,
+    CINEMATIC_CHASE,
+    CINEMATIC_FLYBY,
+    CINEMATIC_COUNT
+  };
+
+  int m_currentCinematicShot = 0;
+  bool m_cinematicMode = false;
+  float m_cinematicAngle = 0.0f;
+
+  bool m_seaDuckAmbushActive = false;
+
+  // Music streams for gapless looping engines
+  Music m_sndTrainerEngine = {0};
+  Music m_sndCargoEngine = {0};
+  Music m_sndJetEngine = {0};
+  Music m_sndSeaDuckEngine = {0};
 };

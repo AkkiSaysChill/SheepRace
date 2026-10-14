@@ -36,9 +36,21 @@ public:
   const MissionStage *GetCurrentStage() const;
   float GetMissionTime() const { return m_missionTime; }
 
+  void AdvanceStage(); // Expose publicly so events can advance stages
+  void FailMission() {
+    m_failed = true;
+    m_active = false;
+  }
+  bool IsFailed() const { return m_failed; }
+  void RestartCurrentMission() {
+    if (m_currentMission) {
+      StartMission(m_currentMission->id);
+    }
+  }
+
 private:
-  void AdvanceStage();
   void ApplyMissionEnvironment();
+  bool m_failed = false;
 
   Engine *m_engine;
   const MissionData *m_currentMission;

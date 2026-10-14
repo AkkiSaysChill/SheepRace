@@ -1,190 +1,290 @@
 <Missions>
-    <!-- =================================================================== -->
-    <!-- ACT I: THE FREELANCER (Missions 01 - 04)                             -->
-    <!-- =================================================================== -->
-
+    <!-- ACT 1: LIFE BEFORE THE WAR -->
     <!-- Mission 01: Maiden Flight -->
     <Mission id="campaign_01_maiden" 
              title="Maiden Flight" 
              plane="trainer" 
-             description="Take off from West Strip, climb above 140m, pass the Coastal Arch, and return for landing.">
+             description="Take off from West Strip heading East, loop around Southern Cape, and return for runway landing.">
         <Spawn x="-4850.0" y="111.5" z="150.0" heading="90.0"/>
         <Environment time="7.5" weather="CLEAR"/>
         
-        <Stage type="TAKEOFF" description="Climb out heading East past 140m">
-            <Position x="-4200.0" y="140.0" z="150.0"/>
-            <Radius>350.0</Radius>
-            <MinSpeed>135.0</MinSpeed>
-            <MinAltitude>140.0</MinAltitude>
+        <Stage type="TAKEOFF" description="Climb out heading East past 160m">
+            <Position x="-3800.0" y="165.0" z="150.0"/>
+            <Radius>300.0</Radius>
+            <MinSpeed>130.0</MinSpeed>
+            <MinAltitude>150.0</MinAltitude>
         </Stage>
 
-        <Stage type="RING_GATE" description="Fly through Coastal Rock Arch">
-            <Position x="-3200.0" y="170.0" z="450.0"/>
+        <Stage type="RING_GATE" description="Fly through West Cape Arch">
+            <Position x="-3200.0" y="180.0" z="-750.0"/>
+            <Radius>85.0</Radius>
+        </Stage>
+
+        <Stage type="WAYPOINT" description="Bank West toward Open Sea">
+            <Position x="-4400.0" y="210.0" z="-1200.0"/>
+            <Radius>250.0</Radius>
+        </Stage>
+
+        <Stage type="RING_GATE" description="Align with West Runway final approach">
+            <Position x="-5500.0" y="160.0" z="150.0"/>
             <Radius>80.0</Radius>
         </Stage>
 
-        <Stage type="WAYPOINT" description="Bank around Southern Headland">
-            <Position x="-4200.0" y="200.0" z="-950.0"/>
-            <Radius>220.0</Radius>
-        </Stage>
-
-        <Stage type="RING_GATE" description="Align with final approach glideslope">
-            <Position x="-5500.0" y="160.0" z="150.0"/>
-            <Radius>75.0</Radius>
-        </Stage>
-
-        <Stage type="LANDING" description="Touch down smoothly on West Island Runway">
+        <Stage type="LANDING" description="Touch down on West Island Runway">
             <Position x="-4500.0" y="111.5" z="150.0"/>
-            <Radius>250.0</Radius>
+            <Radius>260.0</Radius>
             <MaxSpeed>180.0</MaxSpeed>
         </Stage>
     </Mission>
 
-    <!-- Mission 02: Squall Rescue -->
-    <Mission id="campaign_02_squall" 
-             title="Squall Rescue" 
-             plane="sea_duck" 
-             description="A trawler is adrift in gale-force winds. Airdrop emergency rations and splash down in the cove.">
+    <!-- Mission 02: Island Hopper -->
+    <Mission id="campaign_02_hopper" 
+             title="Island Hopper" 
+             plane="cargo" 
+             description="Pick up passengers, climb through clouds across the island, manage deteriorating weather, and divert for a safe landing.">
         <Spawn x="-4850.0" y="111.5" z="150.0" heading="90.0"/>
-        <Environment time="17.0" weather="STORMY_RAIN"/>
+        <Environment time="11.0" weather="PARTLY_CLOUDY"/>
         
-        <Stage type="TAKEOFF" description="Take off into headwind toward East Channel">
-            <Position x="-4100.0" y="130.0" z="150.0"/>
+        <Stage type="TAKEOFF" description="Take off with civilian passengers heading North">
+            <Position x="-3800.0" y="150.0" z="150.0"/>
             <Radius>350.0</Radius>
             <MinSpeed>140.0</MinSpeed>
-            <MinAltitude>100.0</MinAltitude>
+            <MinAltitude>130.0</MinAltitude>
         </Stage>
 
-        <Stage type="WAYPOINT" description="Fight crosswinds across Central Ocean Channel">
-            <Position x="500.0" y="220.0" z="-1200.0"/>
+        <Stage type="RING_GATE" description="Climb through cloud layer over Central Ridge">
+            <Position x="-1500.0" y="450.0" z="800.0"/>
+            <Radius>90.0</Radius>
+        </Stage>
+
+        <Stage type="WAYPOINT" description="Navigate worsening weather toward East Island Strip">
+            <Position x="1800.0" y="400.0" z="1200.0"/>
             <Radius>300.0</Radius>
         </Stage>
 
-        <Stage type="DROP_PAYLOAD" event="DROP_CARGO" description="Drop medical crate over the stranded vessel [G]">
-            <Position x="2800.0" y="90.0" z="-2100.0"/>
+        <Stage type="LANDING" description="Safe diversion landing at East Island airfield">
+            <Position x="2600.0" y="111.5" z="800.0"/>
+            <Radius>300.0</Radius>
+            <MaxSpeed>200.0</MaxSpeed>
+        </Stage>
+    </Mission>
+
+    <!-- ACT 2: THE ISLANDS -->
+    <!-- Mission 03: Squall Rescue -->
+    <Mission id="campaign_03_squall" 
+             title="Squall Rescue" 
+             plane="sea_duck" 
+             description="A trawler is adrift in the East Sound. Airdrop emergency rations, then punch south through the squall to land in South Atoll Bay.">
+        <Spawn x="-4850.0" y="111.5" z="150.0" heading="90.0"/>
+        <Environment time="17.0" weather="STORMY_RAIN"/>
+        
+        <Stage type="TAKEOFF" description="Take off into headwind toward Central Channel">
+            <Position x="-3600.0" y="150.0" z="150.0"/>
+            <Radius>350.0</Radius>
+            <MinSpeed>135.0</MinSpeed>
+            <MinAltitude>120.0</MinAltitude>
+        </Stage>
+
+        <Stage type="WAYPOINT" description="Cross Central Channel toward East Island">
+            <Position x="0.0" y="220.0" z="100.0"/>
+            <Radius>350.0</Radius>
+        </Stage>
+
+        <Stage type="DROP_PAYLOAD" event="DROP_CARGO" description="Drop medical crate over stranded trawler [G]">
+            <Position x="2600.0" y="70.0" z="300.0"/>
             <Radius>180.0</Radius>
         </Stage>
 
-        <Stage type="RING_GATE" description="Descend low through North Bay Gap">
-            <Position x="3800.0" y="45.0" z="-1600.0"/>
-            <Radius>75.0</Radius>
+        <Stage type="WAYPOINT" description="Turn South-West and fight squall headwind toward South Island">
+            <Position x="1200.0" y="110.0" z="-3600.0"/>
+            <Radius>350.0</Radius>
         </Stage>
 
-        <Stage type="LANDING" description="Amphibious water splashdown in East Mountain Bay">
-            <Position x="4500.0" y="1.5" z="-1400.0"/>
-            <Radius>260.0</Radius>
+        <Stage type="RING_GATE" description="Descend below 50m through South Channel Entry Gate">
+            <Position x="0.0" y="45.0" z="-6800.0"/>
+            <Radius>85.0</Radius>
+        </Stage>
+
+        <Stage type="LANDING" description="Amphibious water splashdown in South Atoll Lagoon">
+            <Position x="0.0" y="2.0" z="-7600.0"/>
+            <Radius>280.0</Radius>
             <MaxSpeed>165.0</MaxSpeed>
         </Stage>
     </Mission>
 
-    <!-- Mission 03: Smuggler's Run -->
-    <Mission id="campaign_03_smuggler" 
-             title="Smuggler's Run" 
-             plane="sea_duck" 
-             description="Deliver contraband under the radar ceiling. Keep altitude under 40m and drop cargo into the lagoon.">
-        <Spawn x="4500.0" y="1.5" z="-1400.0" heading="240.0"/>
-        <Environment time="20.5" weather="DENSE_FOG"/>
-
-        <Stage type="TAKEOFF" description="Water liftoff heading Southwest">
-            <Position x="3700.0" y="35.0" z="-2200.0"/>
-            <Radius>300.0</Radius>
-            <MinSpeed>130.0</MinSpeed>
-            <MinAltitude>25.0</MinAltitude>
-        </Stage>
-
-        <Stage type="RING_GATE" description="Radar avoidance: Thread Sea Arch below 35m">
-            <Position x="1800.0" y="32.0" z="-4500.0"/>
-            <Radius>65.0</Radius>
-        </Stage>
-
-        <Stage type="DROP_PAYLOAD" event="DROP_CARGO" description="Drop drop-box to speedboat in South Lagoon [G]">
-            <Position x="0.0" y="28.0" z="-7200.0"/>
-            <Radius>160.0</Radius>
-        </Stage>
-
-        <Stage type="RING_GATE" description="Low skimming approach between sandbars">
-            <Position x="0.0" y="22.0" z="-8000.0"/>
-            <Radius>70.0</Radius>
-        </Stage>
-
-        <Stage type="LANDING" description="Touch down on South Atoll dirt strip">
-            <Position x="0.0" y="23.5" z="-8500.0"/>
-            <Radius>280.0</Radius>
-            <MaxSpeed>170.0</MaxSpeed>
-        </Stage>
-    </Mission>
-
-    <!-- Mission 04: Sabotage! -->
-    <Mission id="campaign_04_sabotage" 
-             title="Sabotage!" 
+    <!-- Mission 04: Mountain Supply Run -->
+    <Mission id="campaign_04_supply" 
+             title="Mountain Supply Run" 
              plane="cargo" 
-             description="Mid-air emergency: Fuel lines severed at 600m. Deadstick glide the heavy airframe to West Runway.">
-        <Spawn x="-1500.0" y="650.0" z="800.0" heading="260.0"/>
-        <Environment time="18.8" weather="OVERCAST"/>
+             description="Transport medical personnel and equipment through mountain passes, handle heavy aircraft handling under turbulence, and land at the cliff city.">
+        <Spawn x="-4850.0" y="111.5" z="150.0" heading="90.0"/>
+        <Environment time="15.0" weather="OVERCAST"/>
 
-        <Stage type="EVENT_TRIGGER" event="ENGINE_FAIL" description="Fuel starvation: ENGINES SHUT DOWN - GLIDE IMMEDIATELY">
-            <Position x="-2100.0" y="580.0" z="600.0"/>
-            <Radius>200.0</Radius>
+        <Stage type="TAKEOFF" description="Heavy climb out with medical cargo">
+            <Position x="-3600.0" y="200.0" z="150.0"/>
+            <Radius>400.0</Radius>
+            <MinSpeed>150.0</MinSpeed>
+            <MinAltitude>160.0</MinAltitude>
         </Stage>
 
-        <Stage type="RING_GATE" description="Keep pitch up: Clear Canyon Ridge Gate 1">
-            <Position x="-3200.0" y="380.0" z="350.0"/>
-            <Radius>85.0</Radius>
+        <Stage type="RING_GATE" description="Thread through East Mountain Pass">
+            <Position x="500.0" y="580.0" z="200.0"/>
+            <Radius>90.0</Radius>
         </Stage>
 
-        <Stage type="RING_GATE" description="Bank sharply into Runway Alignment Gate 2">
-            <Position x="-5600.0" y="190.0" z="150.0"/>
-            <Radius>80.0</Radius>
+        <Stage type="WAYPOINT" description="Manage heavy aircraft altitude through turbulence zone">
+            <Position x="1800.0" y="450.0" z="800.0"/>
+            <Radius>300.0</Radius>
         </Stage>
 
-        <Stage type="LANDING" description="Deadstick emergency landing on West Runway">
-            <Position x="-4500.0" y="111.5" z="150.0"/>
+        <Stage type="LANDING" description="Land heavy transport at Cliff City airstrip">
+            <Position x="2400.0" y="320.0" z="1200.0"/>
             <Radius>280.0</Radius>
             <MaxSpeed>210.0</MaxSpeed>
         </Stage>
     </Mission>
 
-    <!-- =================================================================== -->
-    <!-- ACT II: INVASION (Missions 05 - 07)                                 -->
-    <!-- =================================================================== -->
+    <!-- ACT 3: SOMETHING IS WRONG -->
+    <!-- Mission 05: Smuggler's Ambush -->
+    <Mission id="campaign_05_smuggler" 
+             title="Smuggler's Ambush" 
+             plane="sea_duck" 
+             description="Touch down on South Runway with the contraband. Discover PMC involvement during the ambush escape.">
+        <Spawn x="-4850.0" y="111.5" z="150.0" heading="90.0"/>
+        <Environment time="20.5" weather="DENSE_FOG"/>
 
-    <!-- Mission 05: Hostile Skies -->
-    <Mission id="campaign_05_hostile" 
+        <Enemies>
+            <Enemy id="ambush_jet_1" name="PMC Ambush Falcon 1" type="AIR_PATROL" targetStage="0">
+                <Position x="-350.0" y="120.0" z="-7200.0"/>
+                <Health>100.0</Health>
+                <Radius>25.0</Radius>
+                <Speed>180.0</Speed>
+            </Enemy>
+            <Enemy id="ambush_jet_2" name="PMC Ambush Falcon 2" type="AIR_PATROL" targetStage="0">
+                <Position x="350.0" y="120.0" z="-7200.0"/>
+                <Health>100.0</Health>
+                <Radius>25.0</Radius>
+                <Speed>180.0</Speed>
+            </Enemy>
+        </Enemies>
+
+        <Stage type="TAKEOFF" description="Take off heading East and climb past 120m">
+            <Position x="-3800.0" y="135.0" z="150.0"/>
+            <Radius>350.0</Radius>
+            <MinSpeed>130.0</MinSpeed>
+            <MinAltitude>120.0</MinAltitude>
+        </Stage>
+
+        <Stage type="WAYPOINT" description="Bank South-East into the channel toward South Atoll">
+            <Position x="-3000.0" y="80.0" z="-1800.0"/>
+            <Radius>300.0</Radius>
+        </Stage>
+
+        <Stage type="RING_GATE" description="Skim below 40m radar ceiling">
+            <Position x="-1800.0" y="32.0" z="-4400.0"/>
+            <Radius>75.0</Radius>
+        </Stage>
+
+        <Stage type="EVENT_TRIGGER" event="TRIGGER_AMBUSH" description="Approach South Runway threshold">
+            <Position x="0.0" y="30.0" z="-7200.0"/>
+            <Radius>120.0</Radius>
+        </Stage>
+
+        <Stage type="DROP_PAYLOAD" event="DROP_CARGO" description="AMBUSH DETECTED! DUMP CARGO ON RUNWAY [G] AND FLEE">
+            <Position x="0.0" y="24.0" z="-7800.0"/>
+            <Radius>300.0</Radius>
+        </Stage>
+
+        <Stage type="RING_GATE" description="Full throttle! Escape through South Reef Gap">
+            <Position x="400.0" y="45.0" z="-9200.0"/>
+            <Radius>110.0</Radius>
+        </Stage>
+
+        <Stage type="EVENT_TRIGGER" event="DITCH_WATER" description="Cut engines and ditch Sea Duck in shallow reef!">
+            <Position x="800.0" y="10.0" z="-10200.0"/>
+            <Radius>350.0</Radius>
+        </Stage>
+    </Mission>
+
+    <!-- ACT 4: THE TRUTH -->
+    <!-- Mission 06: Sabotage! -->
+    <Mission id="campaign_06_sabotage" 
+             title="Sabotage!" 
+             plane="cargo" 
+             description="Cascading turbine explosion over East Mountain at dusk. Jettison heavy cargo over the sound and deadstick glide through the ridge gap to West Runway.">
+        <Spawn x="1200.0" y="680.0" z="300.0" heading="270.0"/>
+        <Environment time="19.2" weather="STORMY_RAIN"/>
+
+        <Stage type="RING_GATE" description="Turbine surge: Maintain 220 km/h through Mountain Saddle Gap">
+            <Position x="0.0" y="560.0" z="220.0"/>
+            <Radius>95.0</Radius>
+        </Stage>
+
+        <Stage type="EVENT_TRIGGER" event="ENGINE_FAIL" description="ALL TURBINES FLAMED OUT! HOLD NOSE ATTITUDE">
+            <Position x="-1000.0" y="490.0" z="180.0"/>
+            <Radius>220.0</Radius>
+        </Stage>
+
+        <Stage type="DROP_PAYLOAD" event="DROP_CARGO" description="GLIDE RATIO CRITICAL: JETTISON HEAVY CARGO [G] OVER WATER">
+            <Position x="-2200.0" y="380.0" z="160.0"/>
+            <Radius>260.0</Radius>
+        </Stage>
+
+        <Stage type="RING_GATE" description="Terrain Alert: Thread West Harbor Coastal Notch below 240m">
+            <Position x="-3200.0" y="240.0" z="150.0"/>
+            <Radius>85.0</Radius>
+        </Stage>
+
+        <Stage type="RING_GATE" description="Wings level: Intercept short final approach gate">
+            <Position x="-3850.0" y="150.0" z="150.0"/>
+            <Radius>80.0</Radius>
+        </Stage>
+
+        <Stage type="LANDING" description="Deadstick emergency landing on West Runway (Brakes: [SPACE])">
+            <Position x="-4500.0" y="111.5" z="150.0"/>
+            <Radius>280.0</Radius>
+            <MaxSpeed>220.0</MaxSpeed>
+        </Stage>
+    </Mission>
+
+    <!-- ACT 5: THE INVASION -->
+    <!-- Mission 07: Hostile Skies -->
+    <Mission id="campaign_07_hostile" 
              title="Hostile Skies" 
              plane="jet_mk2" 
-             description="A rogue PMC incurs into island airspace. Scramble the Jet Mk2 and splash two scout planes.">
+             description="Scramble Jet Mk2 East into Central Channel to intercept mapping scouts.">
         <Spawn x="-4850.0" y="111.5" z="150.0" heading="90.0"/>
         <Environment time="14.0" weather="CLEAR"/>
         
         <Enemies>
-            <Enemy id="pmc_scout_1" name="PMC Recon Falcon 1" type="AIR_PATROL" targetStage="1">
-                <Position x="800.0" y="420.0" z="600.0"/>
+            <Enemy id="pmc_scout_1" name="PMC Recon Falcon 1" type="AIR_PATROL" targetStage="0">
+                <Position x="-1200.0" y="380.0" z="400.0"/>
                 <Health>100.0</Health>
                 <Radius>25.0</Radius>
                 <Speed>130.0</Speed>
             </Enemy>
-            <Enemy id="pmc_scout_2" name="PMC Recon Falcon 2" type="AIR_PATROL" targetStage="1">
-                <Position x="1000.0" y="450.0" z="900.0"/>
+            <Enemy id="pmc_scout_2" name="PMC Recon Falcon 2" type="AIR_PATROL" targetStage="0">
+                <Position x="-800.0" y="420.0" z="-200.0"/>
                 <Health>100.0</Health>
                 <Radius>25.0</Radius>
                 <Speed>135.0</Speed>
             </Enemy>
         </Enemies>
 
-        <Stage type="TAKEOFF" description="Full afterburner rotation heading East">
-            <Position x="-1050.0" y="180.0" z="150.0"/>
+        <Stage type="TAKEOFF" event="INTRO_RECON_PAIR" description="Afterburner climb heading East">
+            <Position x="-3500.0" y="200.0" z="150.0"/>
             <Radius>400.0</Radius>
-            <MinSpeed>260.0</MinSpeed>
-            <MinAltitude>160.0</MinAltitude>
+            <MinSpeed>250.0</MinSpeed>
+            <MinAltitude>180.0</MinAltitude>
         </Stage>
 
-        <Stage type="TARGET_STRIKE" event="DESTROY_TARGET" description="Eliminate PMC Recon pair [SPACE / LCTRL]">
-            <Position x="1000.0" y="440.0" z="750.0"/>
-            <Radius>250.0</Radius>
+        <Stage type="TARGET_STRIKE" event="DESTROY_TARGET" description="Splash PMC Recon pair over Central Channel">
+            <Position x="-1000.0" y="400.0" z="150.0"/>
+            <Radius>350.0</Radius>
         </Stage>
 
-        <Stage type="WAYPOINT" description="Regroup over East Island Radio Tower">
-            <Position x="3200.0" y="320.0" z="-400.0"/>
+        <Stage type="WAYPOINT" description="Regroup waypoint over West Harbor">
+            <Position x="-3400.0" y="260.0" z="600.0"/>
             <Radius>300.0</Radius>
         </Stage>
 
@@ -195,255 +295,330 @@
         </Stage>
     </Mission>
 
-    <!-- Mission 06: Midnight Intercept -->
-    <Mission id="campaign_06_intercept" 
+    <!-- Mission 08: Midnight Intercept -->
+    <Mission id="campaign_08_intercept" 
              title="Midnight Intercept" 
              plane="jet_mk2" 
-             description="Hostile night raid detected over the channel. Use HUD radar lock to destroy three incoming aces.">
+             radar="true"
+             description="Night raid defense mission. Use radar and overcast conditions to engage, letting one contact escape as phase two begins.">
         <Spawn x="-4850.0" y="111.5" z="150.0" heading="90.0"/>
         <Environment time="23.5" weather="OVERCAST"/>
 
         <Enemies>
-            <Enemy id="night_raider_1" name="Shadow Ace Alpha" type="AIR_PATROL" targetStage="1">
-                <Position x="-500.0" y="520.0" z="-1000.0"/>
+            <Enemy id="night_raider_1" name="Shadow Ace Alpha" type="AIR_PATROL" targetStage="0">
+                <Position x="-2200.0" y="440.0" z="3200.0"/>
                 <Health>120.0</Health>
                 <Radius>28.0</Radius>
                 <Speed>145.0</Speed>
             </Enemy>
-            <Enemy id="night_raider_2" name="Shadow Ace Bravo" type="AIR_PATROL" targetStage="1">
-                <Position x="200.0" y="500.0" z="-1200.0"/>
+            <Enemy id="night_raider_2" name="Shadow Ace Bravo" type="AIR_PATROL" targetStage="0">
+                <Position x="-1500.0" y="460.0" z="3800.0"/>
                 <Health>120.0</Health>
                 <Radius>28.0</Radius>
                 <Speed>145.0</Speed>
             </Enemy>
-            <Enemy id="night_raider_3" name="Shadow Ace Charlie" type="AIR_PATROL" targetStage="1">
-                <Position x="-1200.0" y="540.0" z="-2000.0"/>
+            <Enemy id="night_raider_3" name="Shadow Ace Charlie" type="AIR_PATROL" targetStage="0">
+                <Position x="-2800.0" y="480.0" z="4200.0"/>
                 <Health>120.0</Health>
                 <Radius>28.0</Radius>
                 <Speed>140.0</Speed>
             </Enemy>
         </Enemies>
 
-        <Stage type="TAKEOFF" description="Night climb-out: Intercept hostile vector South">
-            <Position x="-4200.0" y="240.0" z="-800.0"/>
+        <Stage type="TAKEOFF" event="INTRO_NIGHT_ACES" description="Night climb-out: Turn North toward incoming strike">
+            <Position x="-4200.0" y="240.0" z="1200.0"/>
             <Radius>400.0</Radius>
             <MinSpeed>250.0</MinSpeed>
             <MinAltitude>200.0</MinAltitude>
         </Stage>
 
-        <Stage type="TARGET_STRIKE" event="DESTROY_TARGET" description="Splash all 3 Shadow Aces in zero-visibility">
-            <Position x="-500.0" y="520.0" z="-3000.0"/>
-            <Radius>350.0</Radius>
+        <Stage type="TARGET_STRIKE" event="DESTROY_TARGET" description="Intercept strike force and let the survivor flee">
+            <Position x="-2000.0" y="450.0" z="3500.0"/>
+            <Radius>400.0</Radius>
         </Stage>
 
-        <Stage type="RING_GATE" description="West Runway approach marker">
+        <Stage type="RING_GATE" description="West Runway instrument approach gate">
             <Position x="-5500.0" y="180.0" z="150.0"/>
             <Radius>90.0</Radius>
         </Stage>
 
         <Stage type="LANDING" description="Instrument night landing on West Strip">
             <Position x="-4500.0" y="111.5" z="150.0"/>
-            <Radius>260.0</Radius>
+            <Radius>270.0</Radius>
             <MaxSpeed>220.0</MaxSpeed>
         </Stage>
     </Mission>
 
-    <!-- Mission 07: Heavy Lift Under Fire -->
-    <Mission id="campaign_07_heavylift" 
+    <!-- ACT 6: RESISTANCE -->
+    <!-- Mission 09: Heavy Lift Under Fire -->
+    <Mission id="campaign_09_heavylift" 
              title="Heavy Lift Under Fire" 
              plane="cargo" 
              radar="true"
-             description="Deliver emergency munitions to the frontline crater while evading PMC jet interceptors.">
-        <Spawn x="0.0" y="23.5" z="-8500.0" heading="0.0"/>
-        <Environment time="16.0" weather="STORMY_RAIN"/>
+             description="Supply the resistance. Skim water to evade Wardog's radar, deliver munitions to activate coastal AA trap, and let Wardog escape.">
+        <Spawn x="0.0" y="23.5" z="-8000.0" heading="0.0"/>
+        <Environment time="16.5" weather="STORMY_RAIN"/>
 
         <Enemies>
-            <Enemy id="canyon_patrol_1" name="PMC Interceptor Wardog" type="AIR_PATROL" targetStage="2">
-                <Position x="-1800.0" y="320.0" z="2000.0"/>
+            <Enemy id="canyon_patrol_1" name="PMC Interceptor Wardog" type="AIR_PATROL" targetStage="0">
+                <Position x="-200.0" y="380.0" z="-4600.0"/>
                 <Health>90.0</Health>
                 <Radius>30.0</Radius>
-                <Speed>135.0</Speed>
+                <Speed>140.0</Speed>
             </Enemy>
         </Enemies>
 
-        <Stage type="TAKEOFF" description="Heavy climb North out of South Atoll">
-            <Position x="0.0" y="100.0" z="-7200.0"/>
+        <Stage type="TAKEOFF" event="INTRO_WARDOG_CHASE" description="Full throttle climb North out of South Strip">
+            <Position x="0.0" y="90.0" z="-6800.0"/>
             <Radius>450.0</Radius>
-            <MinSpeed>175.0</MinSpeed>
-            <MinAltitude>80.0</MinAltitude>
+            <MinSpeed>170.0</MinSpeed>
+            <MinAltitude>75.0</MinAltitude>
         </Stage>
 
-        <Stage type="WAYPOINT" description="Skim low across Central Channel">
-            <Position x="-1000.0" y="180.0" z="-1500.0"/>
-            <Radius>350.0</Radius>
-        </Stage>
-
-        <Stage type="DROP_PAYLOAD" event="DROP_CARGO" description="Deploy munitions into Canyon Defense Post [G]">
-            <Position x="-2200.0" y="260.0" z="2600.0"/>
-            <Radius>220.0</Radius>
-        </Stage>
-
-        <Stage type="RING_GATE" description="Canyon exit gap: Break toward West coast">
-            <Position x="-3800.0" y="200.0" z="1400.0"/>
+        <Stage type="RING_GATE" description="RADAR WARNING: Dive below 40m into South Channel Trench">
+            <Position x="0.0" y="32.0" z="-5200.0"/>
             <Radius>85.0</Radius>
+        </Stage>
+
+        <Stage type="RING_GATE" description="Hold sea-skimming altitude to evade Wardog's missile lock">
+            <Position x="-350.0" y="35.0" z="-4000.0"/>
+            <Radius>90.0</Radius>
+        </Stage>
+
+        <Stage type="DROP_PAYLOAD" event="DROP_CARGO" description="Drop munitions to Resistance Post [G] to trigger AA trap!">
+            <Position x="-600.0" y="45.0" z="-2800.0"/>
+            <Radius>240.0</Radius>
+        </Stage>
+
+        <Stage type="EVENT_TRIGGER" event="TRIGGER_AA_TRAP" description="Lure Wardog over the barge! AA battery fires, Wardog evades">
+            <Position x="-1200.0" y="80.0" z="-2000.0"/>
+            <Radius>260.0</Radius>
+        </Stage>
+
+        <Stage type="RING_GATE" description="Line up with West Runway approach fix">
+            <Position x="-3200.0" y="140.0" z="-600.0"/>
+            <Radius>95.0</Radius>
         </Stage>
 
         <Stage type="LANDING" description="Tactical rollout on West Island Runway">
             <Position x="-4500.0" y="111.5" z="150.0"/>
-            <Radius>280.0</Radius>
-            <MaxSpeed>215.0</MaxSpeed>
+            <Radius>300.0</Radius>
+            <MaxSpeed>220.0</MaxSpeed>
         </Stage>
     </Mission>
 
-    <!-- =================================================================== -->
-    <!-- ACT III: LIBERATION (Missions 08 - 10)                              -->
-    <!-- =================================================================== -->
+    <!-- ACT 7: SAVE THE CITY -->
+    <!-- Mission 10: Evacuation -->
+    <!-- Mission 10: Evacuation -->
+    <Mission id="campaign_10_evacuation" 
+             title="Evacuation" 
+             plane="cargo" 
+             description="Fly refugees from Cliff City to West Base. Defend the commercial jet after switching to the Jet Mk2!">
+        <Spawn x="2400.0" y="320.0" z="1200.0" heading="180.0"/>
+        <Environment time="18.0" weather="STORMY_RAIN"/>
 
-    <!-- Mission 08: Canyon Strike -->
-    <Mission id="campaign_08_canyonstrike" 
+        <Enemies>
+            <!-- Hidden underground until EVENT_TRIGGER spawns them -->
+            <Enemy id="friendly_airliner" name="Evacuation Flight" type="AIR_PATROL" targetStage="0">
+                <Position x="0.0" y="-1000.0" z="0.0"/>
+                <Health>350.0</Health>
+                <Radius>35.0</Radius>
+                <Speed>140.0</Speed>
+            </Enemy>
+            <Enemy id="mission10_ambush_1" name="PMC Interceptor" type="AIR_PATROL" targetStage="4">
+                <Position x="-200.0" y="-1000.0" z="0.0"/>
+                <Health>120.0</Health>
+                <Radius>25.0</Radius>
+                <Speed>190.0</Speed>
+            </Enemy>
+            <Enemy id="mission10_ambush_2" name="PMC Interceptor" type="AIR_PATROL" targetStage="4">
+                <Position x="200.0" y="-1000.0" z="0.0"/>
+                <Health>120.0</Health>
+                <Radius>25.0</Radius>
+                <Speed>190.0</Speed>
+            </Enemy>
+        </Enemies>
+
+        <Stage type="TAKEOFF" description="Take off with 64 civilians from Cliff City runway">
+            <Position x="2000.0" y="350.0" z="800.0"/>
+            <Radius>350.0</Radius>
+            <MinSpeed>130.0</MinSpeed>
+            <MinAltitude>140.0</MinAltitude>
+        </Stage>
+
+        <Stage type="RING_GATE" description="Fly through mountain corridor avoiding radar detection">
+            <Position x="500.0" y="480.0" z="200.0"/>
+            <Radius>95.0</Radius>
+        </Stage>
+
+        <Stage type="WAYPOINT" description="Maintain steady transport speed over Central Channel">
+            <Position x="-1500.0" y="250.0" z="-200.0"/>
+            <Radius>350.0</Radius>
+        </Stage>
+
+        <!-- Descend into the trigger to swap planes -->
+        <Stage type="EVENT_TRIGGER" event="SWITCH_TO_JET" description="Emergency landing at West Base (Descend!)">
+            <Position x="-4500.0" y="111.5" z="150.0"/>
+            <Radius>300.0</Radius>
+        </Stage>
+
+        <Stage type="TARGET_STRIKE" event="DESTROY_TARGET" description="Protect the Airliner! Splash the PMCs.">
+            <!-- Positioned high above so it doesn't auto-complete via distance -->
+            <Position x="-4500.0" y="3000.0" z="-1000.0"/>
+            <Radius>50.0</Radius>
+        </Stage>
+    </Mission>
+
+    <!-- ACT 8: COUNTERATTACK -->
+    <!-- Mission 11: Canyon Strike -->
+    <Mission id="campaign_11_canyonstrike" 
              title="Canyon Strike" 
              plane="jet_mk2" 
-             description="Fly low through canyon corridors to obliterate the PMC forward base in the crater zone.">
+             description="Attack the PMC base controlling airspace in the Mega Island Cliff Fjord.">
         <Spawn x="-4850.0" y="111.5" z="150.0" heading="90.0"/>
         <Environment time="19.2" weather="PARTLY_CLOUDY"/>
 
         <Enemies>
-            <Enemy id="crater_guard_1" name="Base Guard Falcon" type="AIR_PATROL" targetStage="3">
-                <Position x="1800.0" y="320.0" z="1400.0"/>
-                <Health>140.0</Health>
+            <Enemy id="crater_guard_1" name="Cliff Guard Falcon" type="AIR_PATROL" targetStage="0">
+                <Position x="0.0" y="420.0" z="8200.0"/>
+                <Health>130.0</Health>
                 <Radius>25.0</Radius>
                 <Speed>140.0</Speed>
             </Enemy>
-            <Enemy id="crater_guard_2" name="Base Guard Viper" type="AIR_PATROL" targetStage="3">
-                <Position x="1500.0" y="340.0" z="1600.0"/>
-                <Health>140.0</Health>
+            <Enemy id="crater_guard_2" name="Cliff Guard Viper" type="AIR_PATROL" targetStage="0">
+                <Position x="500.0" y="440.0" z="8500.0"/>
+                <Health>130.0</Health>
                 <Radius>25.0</Radius>
                 <Speed>140.0</Speed>
             </Enemy>
         </Enemies>
 
-        <Stage type="TAKEOFF" description="Full afterburner climb heading East">
-            <Position x="-4100.0" y="180.0" z="150.0"/>
-            <Radius>400.0</Radius>
-            <MinSpeed>260.0</MinSpeed>
-            <MinAltitude>170.0</MinAltitude>
-        </Stage>
-
-        <Stage type="RING_GATE" description="Trench run: Enter Western Canyon Chasm">
-            <Position x="-2400.0" y="240.0" z="600.0"/>
-            <Radius>60.0</Radius>
-        </Stage>
-
-        <Stage type="RING_GATE" description="High-G Split-S inside Narrow Ravine">
-            <Position x="-500.0" y="220.0" z="1100.0"/>
-            <Radius>55.0</Radius>
-        </Stage>
-
-        <Stage type="TARGET_STRIKE" event="DESTROY_TARGET" description="Destroy Crater Base air cover">
-            <Position x="1700.0" y="330.0" z="1500.0"/>
-            <Radius>250.0</Radius>
-        </Stage>
-
-        <Stage type="WAYPOINT" description="Supersonic exit punch-out toward Open Ocean">
-            <Position x="4200.0" y="550.0" z="800.0"/>
-            <Radius>300.0</Radius>
-        </Stage>
-    </Mission>
-
-    <!-- Mission 09: The Armada -->
-    <Mission id="campaign_09_armada" 
-             title="The Armada" 
-             plane="jet_mk2" 
-             description="Mass aerial dogfight over open ocean in a raging electrical squall. Neutralize the strike wing.">
-        <Spawn x="-4850.0" y="111.5" z="150.0" heading="90.0"/>
-        <Environment time="13.0" weather="STORMY_RAIN"/>
-
-        <Enemies>
-            <Enemy id="armada_leader" name="Armada Squadron Leader" type="AIR_PATROL" targetStage="1">
-                <Position x="0.0" y="460.0" z="-4500.0"/>
-                <Health>160.0</Health>
-                <Radius>28.0</Radius>
-                <Speed>155.0</Speed>
-            </Enemy>
-            <Enemy id="armada_wing_1" name="Armada Wingman 1" type="AIR_PATROL" targetStage="1">
-                <Position x="400.0" y="440.0" z="-4300.0"/>
-                <Health>130.0</Health>
-                <Radius>26.0</Radius>
-                <Speed>150.0</Speed>
-            </Enemy>
-            <Enemy id="armada_wing_2" name="Armada Wingman 2" type="AIR_PATROL" targetStage="1">
-                <Position x="-400.0" y="450.0" z="-4700.0"/>
-                <Health>130.0</Health>
-                <Radius>26.0</Radius>
-                <Speed>150.0</Speed>
-            </Enemy>
-            <Enemy id="armada_flanker" name="Armada Flanker" type="AIR_PATROL" targetStage="1">
-                <Position x="800.0" y="500.0" z="-4000.0"/>
-                <Health>140.0</Health>
-                <Radius>26.0</Radius>
-                <Speed>150.0</Speed>
-            </Enemy>
-        </Enemies>
-
-        <Stage type="TAKEOFF" description="Scramble into hurricane winds toward South Channel">
-            <Position x="-4000.0" y="200.0" z="-400.0"/>
+        <Stage type="TAKEOFF" event="INTRO_CANYON_GUARDS" description="Full afterburner rotation heading Northeast">
+            <Position x="-3500.0" y="220.0" z="800.0"/>
             <Radius>400.0</Radius>
             <MinSpeed>260.0</MinSpeed>
             <MinAltitude>180.0</MinAltitude>
         </Stage>
 
-        <Stage type="TARGET_STRIKE" event="DESTROY_TARGET" description="Break the Armada air formation">
-            <Position x="0.0" y="460.0" z="-4500.0"/>
+        <Stage type="RING_GATE" description="Trench run: Enter North Cliff Fjord">
+            <Position x="-1000.0" y="280.0" z="5000.0"/>
+            <Radius>75.0</Radius>
+        </Stage>
+
+        <Stage type="RING_GATE" description="High-G pass under the Northern Ridges">
+            <Position x="-300.0" y="320.0" z="7000.0"/>
+            <Radius>70.0</Radius>
+        </Stage>
+
+        <Stage type="TARGET_STRIKE" event="DESTROY_TARGET" description="Destroy air patrol guarding base airspace">
+            <Position x="200.0" y="430.0" z="8300.0"/>
+            <Radius>300.0</Radius>
+        </Stage>
+
+        <Stage type="WAYPOINT" description="Break South toward Open Channel">
+            <Position x="1200.0" y="480.0" z="6000.0"/>
+            <Radius>350.0</Radius>
+        </Stage>
+    </Mission>
+
+    <!-- ACT 9: EVERYTHING GOES TO HELL -->
+    <!-- Mission 12: The Armada -->
+    <Mission id="campaign_12_armada" 
+             title="The Armada" 
+             plane="jet_mk2" 
+             radar="true"
+             description="Mass aerial dogfight as a massive invasion fleet fills the radar in Central Sound.">
+        <Spawn x="-4850.0" y="111.5" z="150.0" heading="90.0"/>
+        <Environment time="13.0" weather="STORMY_RAIN"/>
+
+        <Enemies>
+            <Enemy id="armada_leader" name="Armada Leader" type="AIR_PATROL" targetStage="0">
+                <Position x="-800.0" y="420.0" z="-1200.0"/>
+                <Health>150.0</Health>
+                <Radius>28.0</Radius>
+                <Speed>150.0</Speed>
+            </Enemy>
+            <Enemy id="armada_wing_1" name="Armada Wing 1" type="AIR_PATROL" targetStage="0">
+                <Position x="-500.0" y="400.0" z="-1000.0"/>
+                <Health>120.0</Health>
+                <Radius>26.0</Radius>
+                <Speed>145.0</Speed>
+            </Enemy>
+            <Enemy id="armada_wing_2" name="Armada Wing 2" type="AIR_PATROL" targetStage="0">
+                <Position x="-1100.0" y="430.0" z="-1400.0"/>
+                <Health>120.0</Health>
+                <Radius>26.0</Radius>
+                <Speed>145.0</Speed>
+            </Enemy>
+            <Enemy id="armada_flanker" name="Armada Flanker" type="AIR_PATROL" targetStage="0">
+                <Position x="-300.0" y="450.0" z="-800.0"/>
+                <Health>130.0</Health>
+                <Radius>26.0</Radius>
+                <Speed>145.0</Speed>
+            </Enemy>
+        </Enemies>
+
+        <Stage type="TAKEOFF" event="INTRO_ARMADA_FLEET" description="Scramble into hurricane winds as radar lights up">
+            <Position x="-3500.0" y="200.0" z="-200.0"/>
+            <Radius>400.0</Radius>
+            <MinSpeed>260.0</MinSpeed>
+            <MinAltitude>180.0</MinAltitude>
+        </Stage>
+
+        <Stage type="TARGET_STRIKE" event="DESTROY_TARGET" description="Engage the invasion strike formation">
+            <Position x="-700.0" y="420.0" z="-1100.0"/>
             <Radius>400.0</Radius>
         </Stage>
 
-        <Stage type="RING_GATE" description="Storm return: Approach fix at 160m">
+        <Stage type="RING_GATE" description="Storm glideslope approach fix at 160m">
             <Position x="-5500.0" y="160.0" z="150.0"/>
             <Radius>85.0</Radius>
         </Stage>
 
-        <Stage type="LANDING" description="Storm recovery on West Runway">
+        <Stage type="LANDING" description="Emergency landing on West Runway">
             <Position x="-4500.0" y="111.5" z="150.0"/>
             <Radius>280.0</Radius>
             <MaxSpeed>225.0</MaxSpeed>
         </Stage>
     </Mission>
 
-    <!-- Mission 10: Dawn of Victory -->
-    <Mission id="campaign_10_victory" 
+    <!-- ACT 10: DAWN OF VICTORY -->
+    <!-- Mission 13: Dawn of Victory -->
+    <Mission id="campaign_13_victory" 
              title="Dawn of Victory" 
              plane="jet_mk2" 
-             description="The PMC Commander is fleeing in an armored prototype at dawn. Hunt him down and secure the island.">
+             radar="true"
+             description="Final showdown. Intercept and destroy the prototype flown by Wardog trying to escape the island.">
         <Spawn x="-4850.0" y="111.5" z="150.0" heading="90.0"/>
         <Environment time="6.0" weather="CLEAR"/>
 
         <Enemies>
-            <Enemy id="commander_boss" name="PMC Flagship Prototype" type="AIR_PATROL" targetStage="2">
-                <Position x="3000.0" y="650.0" z="-2000.0"/>
+            <Enemy id="commander_boss" name="Wardog Escape Prototype" type="AIR_PATROL" targetStage="0">
+                <Position x="2200.0" y="650.0" z="150.0"/>
                 <Health>350.0</Health>
                 <Radius>35.0</Radius>
-                <Speed>165.0</Speed>
+                <Speed>160.0</Speed>
             </Enemy>
         </Enemies>
 
-        <Stage type="TAKEOFF" description="Sunrise launch: Chase the commander East">
-            <Position x="-4000.0" y="220.0" z="150.0"/>
+        <Stage type="TAKEOFF" event="INTRO_FLAGSHIP_BOSS" description="Sunrise scramble: Final pursuit of Wardog">
+            <Position x="-3200.0" y="240.0" z="150.0"/>
             <Radius>400.0</Radius>
             <MinSpeed>270.0</MinSpeed>
             <MinAltitude>200.0</MinAltitude>
         </Stage>
 
-        <Stage type="RING_GATE" description="Supersonic climb through Mountain Saddle Gate">
-            <Position x="800.0" y="520.0" z="-600.0"/>
-            <Radius>80.0</Radius>
+        <Stage type="RING_GATE" description="Climb through East Mountain Saddle Gate">
+            <Position x="800.0" y="520.0" z="150.0"/>
+            <Radius>85.0</Radius>
         </Stage>
 
-        <Stage type="TARGET_STRIKE" event="DESTROY_TARGET" description="Destroy PMC Flagship Prototype before escape [BOSS]">
-            <Position x="3000.0" y="650.0" z="-2000.0"/>
+        <Stage type="TARGET_STRIKE" event="DESTROY_TARGET" description="Destroy Wardog's prototype before escape [BOSS]">
+            <Position x="2200.0" y="650.0" z="150.0"/>
             <Radius>350.0</Radius>
         </Stage>
 
-        <Stage type="RING_GATE" description="Victory flyby: Glideslope Gate">
+        <Stage type="RING_GATE" description="Victory flyby: Glideslope alignment marker">
             <Position x="-5500.0" y="170.0" z="150.0"/>
             <Radius>90.0</Radius>
         </Stage>

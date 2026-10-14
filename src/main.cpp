@@ -6,12 +6,14 @@ void RegisterGameScenes(Engine &engine);
 
 int main() {
   Engine engine;
+  InitAudioDevice();
 
   engine.Initialize();
 
   RegisterGameScenes(engine);
 
   engine.Run();
+  CloseAudioDevice();
   engine.Shutdown();
 
   return 0;

@@ -50,6 +50,7 @@ bool MissionManager::StartMission(const std::string &missionId) {
   m_completed = false;
   m_completionBannerTimer = 0.0f;
   m_missionTime = 0.0f;
+  m_failed = false;
 
   ApplyMissionEnvironment();
 

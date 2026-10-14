@@ -28,6 +28,24 @@ void pack_directory(const fs::path& source_dir, const fs::path& output_file) {
     // gather metadata
     for (const auto& entry : fs::recursive_directory_iterator(source_dir)) {
         if (fs::is_regular_file(entry.path())) {
+            // Skip any file we can't actually open for reading. This check
+            // has to happen BEFORE the file is added to the TOC: previously
+            // an unopenable file was still given a size/offset in the
+            // header, but its bytes were silently skipped during the data
+            // write pass below. That shifted every subsequent file's real
+            // data earlier than its recorded offset, corrupting the whole
+            // rest of the archive - which is why assets loaded out of it
+            // (e.g. audio) could come back truncated/garbled and crash the
+            // decoder in-game.
+            std::ifstream probe(entry.path(), std::ios::binary);
+            if (!probe.is_open()) {
+                std::cerr << "Warning: could not open '" << entry.path()
+                          << "', skipping it (archive would otherwise be corrupted)."
+                          << std::endl;
+                continue;
+            }
+            probe.close();
+
             FileEntry meta;
             // Normalize path
             meta.relative_path = fs::relative(entry.path(), source_dir).string();
@@ -78,18 +96,53 @@ void pack_directory(const fs::path& source_dir, const fs::path& output_file) {
         fs::path full_path = source_dir / entry.relative_path;
         std::ifstream ifs(full_path, std::ios::binary);
 
-        if (!ifs.is_open()) continue;
+        // By this point the header already reserved exactly entry.size
+        // bytes at entry.offset for this file. Every earlier file passed
+        // the same open check during the metadata pass, so a failure here
+        // means the file vanished/became unreadable mid-run - silently
+        // skipping it (as before) would leave a hole and desync every
+        // offset after it, corrupting the archive. Treat it as fatal.
+        if (!ifs.is_open()) {
+            std::cerr << "Error: '" << full_path
+                      << "' became unreadable while packing; aborting to avoid "
+                         "producing a corrupt archive." << std::endl;
+            ofs.close();
+            fs::remove(output_file);
+            return;
+        }
 
+        uint64_t bytes_written = 0;
         while (ifs.read(buffer, sizeof(buffer))) {
             ofs.write(buffer, ifs.gcount());
+            bytes_written += (uint64_t)ifs.gcount();
         }
         if (ifs.gcount() > 0) {
             ofs.write(buffer, ifs.gcount());
+            bytes_written += (uint64_t)ifs.gcount();
+        }
+
+        if (bytes_written != entry.size) {
+            // File shrank/grew between the metadata pass and now - same
+            // corruption risk as above.
+            std::cerr << "Error: '" << full_path
+                      << "' changed size while packing; aborting to avoid "
+                         "producing a corrupt archive." << std::endl;
+            ofs.close();
+            fs::remove(output_file);
+            return;
         }
     }
 
+    if (!ofs) {
+        std::cerr << "Error: a write to '" << output_file
+                  << "' failed (disk full?); archive is corrupt." << std::endl;
+        ofs.close();
+        fs::remove(output_file);
+        return;
+    }
+
     ofs.close();
-    std::cout << "Packed " << num_files << " files efficiently." << std::endl;
+    std::cout << "Packed " << num_files << " files." << std::endl;
 }
 
 int main(int argc, char *argv[]) {

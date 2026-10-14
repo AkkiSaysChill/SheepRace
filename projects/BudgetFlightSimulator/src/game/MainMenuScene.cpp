@@ -2,6 +2,7 @@
 #include "engine/Engine.h"
 #include "engine/SceneManager.h"
 #include "game/AircraftDatabase.h"
+#include "game/FlightSession.h"
 
 MainMenuScene::MainMenuScene() : m_engine(nullptr) {}
 MainMenuScene::~MainMenuScene() {}
@@ -10,7 +11,6 @@ void MainMenuScene::Initialize(Engine *engine) {
   Scene2D::Initialize(engine);
   m_engine = engine;
 
-  // Pre-load aircraft database from bundle or disk
   auto &assetLoader = m_engine->GetAssetLoader();
   assetLoader.loadPackedFile("shaders.bin");
   assetLoader.loadPackedFile("planes.woosh");
@@ -60,18 +60,14 @@ void MainMenuScene::Update(float deltaTime) {
     m_engine->GetSceneManager().LoadScene("MissionSelectScene");
   }
 
-  // Option 1: Quick Flight / Free Flight
+  // Option 1: True Free Roam Mode (No active mission ID)
   if (selectTriggered && m_selectedOption == 1) {
+    FlightSession::GetInstance().activeMissionId = "";
     m_engine->GetSceneManager().LoadScene("FlightScene");
   }
 
-  // Option 2: Hangar / Plane Selector
+  // Option 2: Exit to Desktop
   if (selectTriggered && m_selectedOption == 2) {
-    m_engine->GetSceneManager().LoadScene("HangarScene");
-  }
-
-  // Option 3: Exit
-  if ((selectTriggered && m_selectedOption == 3)) {
     m_engine->RequestExit();
   }
 }
@@ -80,52 +76,40 @@ void MainMenuScene::Draw() {
   int screenW = GetScreenWidth();
   int screenH = GetScreenHeight();
 
-  // Background Gradient
   DrawRectangleGradientV(0, 0, screenW, screenH, Color{15, 20, 30, 255},
                          Color{5, 8, 12, 255});
 
-  // Decorative Horizon Lines / Grid
   for (int y = screenH / 2; y < screenH; y += 40) {
     DrawLine(0, y, screenW, y, Fade(LIME, 0.08f));
   }
 
-  // Title
   const char *title = "BUDGET FLIGHT SIMULATOR";
-  // const char *sub = "TACTICAL AERODYNAMICS & FLIGHT DYNAMICS";
   DrawText(title, screenW / 2 - MeasureText(title, 36) / 2, screenH / 5, 36,
            LIME);
-  // DrawText(sub, screenW / 2 - MeasureText(sub, 16) / 2, screenH / 5 + 45, 16,
-  // LIGHTGRAY);
 
-  // Menu Buttons
   float btnWidth = 320.0f;
   float btnHeight = 46.0f;
-  float startY = screenH * 0.40f;
-  float gap = 16.0f;
+  float startY = screenH * 0.42f;
+  float gap = 18.0f;
 
   Rectangle btnCampaign = {(screenW - btnWidth) / 2.0f, startY, btnWidth,
                            btnHeight};
-  Rectangle btnFly = {(screenW - btnWidth) / 2.0f, startY + (btnHeight + gap),
-                      btnWidth, btnHeight};
-  Rectangle btnHangar = {(screenW - btnWidth) / 2.0f,
-                         startY + (btnHeight + gap) * 2, btnWidth, btnHeight};
+  Rectangle btnFreeRoam = {(screenW - btnWidth) / 2.0f,
+                           startY + (btnHeight + gap), btnWidth, btnHeight};
   Rectangle btnExit = {(screenW - btnWidth) / 2.0f,
-                       startY + (btnHeight + gap) * 3, btnWidth, btnHeight};
+                       startY + (btnHeight + gap) * 2, btnWidth, btnHeight};
 
   if (DrawButton("CAMPAIGN MISSIONS", btnCampaign, m_selectedOption == 0)) {
     m_engine->GetSceneManager().LoadScene("MissionSelectScene");
   }
-  if (DrawButton("FREE FLIGHT", btnFly, m_selectedOption == 1)) {
+  if (DrawButton("FREE ROAM", btnFreeRoam, m_selectedOption == 1)) {
+    FlightSession::GetInstance().activeMissionId = "";
     m_engine->GetSceneManager().LoadScene("FlightScene");
   }
-  if (DrawButton("SELECT AIRCRAFT", btnHangar, m_selectedOption == 2)) {
-    m_engine->GetSceneManager().LoadScene("HangarScene");
-  }
-  if (DrawButton("EXIT TO DESKTOP", btnExit, m_selectedOption == 3)) {
+  if (DrawButton("EXIT TO DESKTOP", btnExit, m_selectedOption == 2)) {
     m_engine->RequestExit();
   }
 
-  // Footer Info
   DrawText("Use [UP / DOWN] and [ENTER] or Mouse to navigate", 20, screenH - 30,
            14, DARKGRAY);
 }
