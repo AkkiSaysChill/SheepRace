@@ -7,6 +7,7 @@
 #include <vector>
 
 class Engine;
+class Ocean;
 
 class MissionSelectScene : public Scene3D {
 public:
@@ -27,10 +28,13 @@ private:
   Font m_customFont;
   bool m_fontLoaded;
 
+  // Moved from static globals to instance members
+  Ocean *m_ocean = nullptr;
+  float m_missionCamAngle = 0.0f;
+
   void EnsureProgressSynchronized();
   bool DrawMissionCard(int index, const std::string &missionId, Rectangle rect,
                        bool isSelected);
-
   void DrawUIString(const char *text, float posX, float posY, float fontSize,
                     Color color);
   float MeasureUIString(const char *text, float fontSize);

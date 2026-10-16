@@ -1,5 +1,7 @@
 #pragma once
+#include "game/MissionData.h"
 #include <string>
+#include <vector>
 
 class FlightSession {
 public:
@@ -8,9 +10,8 @@ public:
     return instance;
   }
 
-  std::string selectedPlaneId = "trainer";
-  std::string activeMissionId;
-
-private:
-  FlightSession() = default;
+  std::string activeMissionId = "";
+  std::string selectedPlaneId = "";
+  std::string sceneAfterComic = "";
+  std::vector<ComicPanel> activeComicSequence;
 };

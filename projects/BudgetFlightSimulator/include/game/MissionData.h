@@ -27,9 +27,9 @@ enum class StageType {
     TAKEOFF,
     RING_GATE,
     WAYPOINT,
-    DROP_PAYLOAD,     // Drop emergency cargo / medical kits (action key [G])
-    EVENT_TRIGGER,    // Scripted events (ENGINE_FAIL, etc.)
-    TARGET_STRIKE,    // Lock-on and destroy drone / enemy ace
+    DROP_PAYLOAD,     
+    EVENT_TRIGGER,    
+    TARGET_STRIKE,    
     LANDING,
     UNKNOWN
 };
@@ -37,25 +37,34 @@ enum class StageType {
 struct MissionStage {
     StageType type = StageType::UNKNOWN;
     std::string description;
-    std::string eventAction; // e.g. "DROP_CARGO", "ENGINE_FAIL", "DESTROY_TARGET"
+    std::string eventAction; 
     Vector3 position = { 0.0f, 0.0f, 0.0f };
     float radius = 60.0f;
-    float minSpeed = 0.0f;    // (km/h)
-    float maxSpeed = 9999.0f; // (km/h)
-    float minAltitude = 0.0f; // (m)
+    float minSpeed = 0.0f;    
+    float maxSpeed = 9999.0f; 
+    float minAltitude = 0.0f; 
+};
+
+struct ComicPanel {
+    std::string imagePath;
+    std::string audioPath;
+    std::string subtitle;
 };
 
 struct MissionData {
     std::string id;
     std::string title;
     std::string description;
-    std::string requiredPlaneId; // "trainer", "jet_mk2", "cargo", etc.
+    std::string requiredPlaneId; 
     
     Vector3 spawnPosition = { -4850.0f, 111.5f, 150.0f };
-    float spawnHeading = 90.0f; // Degrees (0 = North, 90 = East)
+    float spawnHeading = 90.0f; 
     float environmentTime = 12.0f;
     std::string environmentWeather = "CLEAR";
     bool hasRadar = false;
     std::vector<MissionStage> stages;
     std::vector<EnemyData> enemies;
+
+    std::vector<ComicPanel> introComic;
+    std::vector<ComicPanel> outroComic;
 };

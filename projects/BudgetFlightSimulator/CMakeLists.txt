@@ -17,6 +17,7 @@ set(GAME_SOURCES
     src/game/MissionManager.cpp
     src/game/MissionSelectScene.cpp
     src/game/LoadingScene.cpp
+    src/game/ComicScene.cpp
 )
 
 # Create the executable
@@ -37,6 +38,8 @@ set(RES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/resources)
 # Ensure DATA directories exist in current binary directory before bundling
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/DATA/MISSIONS)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/DATA/SFX)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/DATA/COMIC)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/DATA/VOICEOVERS)
 
 # --- Asset Bundling (Scoped per Project Target) ---
 add_custom_command(
@@ -48,8 +51,12 @@ add_custom_command(
         ${CMAKE_CURRENT_BINARY_DIR}/trees.bin
         ${CMAKE_CURRENT_BINARY_DIR}/DATA/MISSIONS/missions.bin
         ${CMAKE_CURRENT_BINARY_DIR}/DATA/SFX/sfx.bin
+        ${CMAKE_CURRENT_BINARY_DIR}/DATA/COMIC/comic.bin
+        ${CMAKE_CURRENT_BINARY_DIR}/DATA/VOICEOVERS/voiceovers.bin
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/DATA/MISSIONS
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/DATA/SFX
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/DATA/COMIC
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/DATA/VOICEOVERS
     COMMAND asset_bundler ${CMAKE_SOURCE_DIR}/include/engine/shader ${CMAKE_CURRENT_BINARY_DIR}/shaders.bin
     COMMAND asset_bundler ${RES_DIR}/planes ${CMAKE_CURRENT_BINARY_DIR}/planes.woosh
     COMMAND asset_bundler ${RES_DIR}/city ${CMAKE_CURRENT_BINARY_DIR}/city.bin
@@ -57,6 +64,8 @@ add_custom_command(
     COMMAND asset_bundler ${RES_DIR}/trees ${CMAKE_CURRENT_BINARY_DIR}/trees.bin
     COMMAND asset_bundler ${RES_DIR}/missions ${CMAKE_CURRENT_BINARY_DIR}/DATA/MISSIONS/missions.bin
     COMMAND asset_bundler ${RES_DIR}/sfx ${CMAKE_CURRENT_BINARY_DIR}/DATA/SFX/sfx.bin
+    COMMAND asset_bundler ${RES_DIR}/comic ${CMAKE_CURRENT_BINARY_DIR}/DATA/COMIC/comic.bin
+    COMMAND asset_bundler ${RES_DIR}/voiceover ${CMAKE_CURRENT_BINARY_DIR}/DATA/VOICEOVERS/voiceovers.bin
     DEPENDS asset_bundler
     COMMENT "Packing BudgetFlightSimulator game assets (shaders, planes, city, houses, trees, missions, sfx)"
 )
@@ -70,6 +79,8 @@ add_custom_target(${PROJECT_NAME}_BundleAssets ALL DEPENDS
     ${CMAKE_CURRENT_BINARY_DIR}/trees.bin
     ${CMAKE_CURRENT_BINARY_DIR}/DATA/MISSIONS/missions.bin
     ${CMAKE_CURRENT_BINARY_DIR}/DATA/SFX/sfx.bin
+    ${CMAKE_CURRENT_BINARY_DIR}/DATA/COMIC/comic.bin
+    ${CMAKE_CURRENT_BINARY_DIR}/DATA/VOICEOVERS/voiceovers.bin
 )
 
 add_dependencies(BudgetFlightSimulator_run ${PROJECT_NAME}_BundleAssets)
@@ -99,5 +110,11 @@ add_custom_command(TARGET BudgetFlightSimulator_run POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${CMAKE_CURRENT_BINARY_DIR}/DATA/SFX/sfx.bin
         $<TARGET_FILE_DIR:BudgetFlightSimulator_run>/DATA/SFX/sfx.bin
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_CURRENT_BINARY_DIR}/DATA/VOICEOVERS/voiceovers.bin
+        $<TARGET_FILE_DIR:BudgetFlightSimulator_run>/DATA/VOICEOVERS/voiceovers.bin
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_CURRENT_BINARY_DIR}/DATA/COMIC/comic.bin
+        $<TARGET_FILE_DIR:BudgetFlightSimulator_run>/DATA/COMIC/comic.bin
     COMMENT "Copying bundled assets to executable directory"
 )

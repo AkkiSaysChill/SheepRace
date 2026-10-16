@@ -33,11 +33,8 @@ void LoadingScene::Initialize(Engine *engine) {
 }
 
 void LoadingScene::Update(float deltaTime) {
-  m_spinnerAngle += deltaTime * 400.0f; // Spin radar
+  m_spinnerAngle += deltaTime * 400.0f;
 
-  // Wait exactly 3 frames. This guarantees Raylib has fully swapped the
-  // graphics buffers and the loading screen is visible on the monitor
-  // before we freeze the main thread with heavy asset loading.
   m_framesWaited++;
   if (m_framesWaited == 3) {
     m_engine->GetSceneManager().LoadScene("FlightScene");
@@ -48,17 +45,14 @@ void LoadingScene::Draw() {
   int screenW = GetScreenWidth();
   int screenH = GetScreenHeight();
 
-  // Deep atmospheric gradient
   DrawRectangleGradientV(0, 0, screenW, screenH, Color{10, 16, 26, 255},
                          Color{2, 4, 8, 255});
 
-  // Grid background
   for (int y = 0; y < screenH; y += 40)
     DrawLine(0, y, screenW, y, Fade(Color{20, 40, 60, 255}, 0.3f));
   for (int x = 0; x < screenW; x += 40)
     DrawLine(x, 0, x, screenH, Fade(Color{20, 40, 60, 255}, 0.3f));
 
-  // Draw Title
   const char *title = "INITIALIZING AVIONICS...";
   int fontSize = 32;
   Vector2 textPos = {(float)screenW / 2.0f -
@@ -77,7 +71,6 @@ void LoadingScene::Draw() {
              Color{100, 240, 255, 255});
   }
 
-  // Draw Spinner (Radar sweep)
   Vector2 center = {(float)screenW / 2.0f, screenH * 0.35f};
   float radius = 40.0f;
   DrawCircleLines((int)center.x, (int)center.y, radius,
@@ -87,7 +80,6 @@ void LoadingScene::Draw() {
                      center.y + sinf(m_spinnerAngle * DEG2RAD) * radius},
              3.0f, Color{255, 215, 0, 255});
 
-  // Draw Tip
   int tipFontSize = 18;
   Vector2 tipPos = {(float)screenW / 2.0f -
                         MeasureText(m_randomTip.c_str(), tipFontSize) / 2.0f,

@@ -330,8 +330,6 @@ void BudgetFlightSimulatorScene::Initialize(Engine *engine) {
             ace.maxHealth = eData.maxHealth;
             ace.hitRadius = eData.radius;
 
-            // Hide story-driven enemies at the start of their missions
-            ace.isAlive = true;
             if (ace.id.find("mission10_ambush") != std::string::npos ||
                 ace.id == "ambush_jet_1" || ace.id == "ambush_jet_2" ||
                 ace.id == "friendly_airliner") {
@@ -415,20 +413,18 @@ void BudgetFlightSimulatorScene::Initialize(Engine *engine) {
     } else if (eventName == "SWITCH_TO_JET") {
       m_cinematicMode = false;
 
-      // 1. Swap planes immediately to Jet Mk2 and place firmly on runway
       SwitchAircraft("jet_mk2");
       m_aircraft.Reset(Vector3{-4500.0f, 111.5f, 150.0f});
       m_aircraft.orientation =
-          QuaternionFromEuler(0.0f, -90.0f * DEG2RAD, 0.0f); // Point East
+          QuaternionFromEuler(0.0f, -90.0f * DEG2RAD, 0.0f);
       m_aircraft.isOnGround = true;
-      m_throttle = 0.0f; // Give player manual control of taking off
+      m_throttle = 0.0f;
 
-      // 2. Spawn airliner taking off, and spawn Wave 1 far out
       for (auto &enemy : m_enemyJets) {
         if (enemy.id == "friendly_airliner") {
           enemy.isAlive = true;
-          enemy.position = Vector3{-4300.0f, 111.5f, 150.0f}; // 200m ahead
-          enemy.velocity = Vector3{160.0f, 12.0f, 0.0f};      // Fast takeoff
+          enemy.position = Vector3{-4300.0f, 111.5f, 150.0f};
+          enemy.velocity = Vector3{160.0f, 12.0f, 0.0f};
           enemy.orientation = QuaternionFromEuler(0.0f, -90.0f * DEG2RAD, 0.0f);
         } else if (enemy.id == "mission10_ambush_1") {
           enemy.isAlive = true;
@@ -445,7 +441,6 @@ void BudgetFlightSimulatorScene::Initialize(Engine *engine) {
         }
       }
 
-      // 3. Trigger Custom Camera Tracking Phase
       s_mission10Phase = 1;
       s_mission10Timer = 0.0f;
 
@@ -498,9 +493,8 @@ void BudgetFlightSimulatorScene::UpdateDogfight(float deltaTime) {
     if (!enemy.isAlive)
       continue;
 
-    // ----- FRIENDLY AIRLINER ESCORT LOGIC -----
     if (enemy.id == "friendly_airliner") {
-      Vector3 targetPos = {0.0f, 150.0f, -6800.0f}; // South Runway approach
+      Vector3 targetPos = {0.0f, 150.0f, -6800.0f};
       Vector3 toTarget = Vector3Subtract(targetPos, enemy.position);
       Vector3 desiredDir = Vector3Normalize(toTarget);
 
@@ -523,10 +517,9 @@ void BudgetFlightSimulatorScene::UpdateDogfight(float deltaTime) {
       enemy.velocity = Vector3Scale(enemyFwd, 150.0f);
       enemy.position =
           Vector3Add(enemy.position, Vector3Scale(enemy.velocity, deltaTime));
-      continue; // Friendly plane doesn't evade or shoot
+      continue;
     }
 
-    // ----- DYNAMIC TARGETING (PMCs Target Airliner over Player) -----
     Vector3 actualTargetPos = m_aircraft.position;
     bool targetingAirliner = false;
     for (const auto &other : m_enemyJets) {
@@ -553,7 +546,6 @@ void BudgetFlightSimulatorScene::UpdateDogfight(float deltaTime) {
                               ? Vector3Scale(toPlayer, 1.0f / distToPlayer)
                               : enemyFwd;
 
-    // Only evade the player, never the airliner
     Vector3 playerFwd = Vector3RotateByQuaternion(Vector3{0.0f, 0.0f, -1.0f},
                                                   m_aircraft.orientation);
     Vector3 playerToEnemy = Vector3Scale(
@@ -919,7 +911,14 @@ void BudgetFlightSimulatorScene::Update(float deltaTime) {
       if (m_missionManager.IsFailed()) {
         m_missionManager.RestartCurrentMission();
       } else {
-        m_engine->GetSceneManager().LoadScene("MissionSelectScene");
+        const MissionData *mData = m_missionManager.GetCurrentMission();
+        if (mData && !mData->outroComic.empty()) {
+          FlightSession::GetInstance().activeComicSequence = mData->outroComic;
+          FlightSession::GetInstance().sceneAfterComic = "MissionSelectScene";
+          m_engine->GetSceneManager().LoadScene("ComicScene");
+        } else {
+          m_engine->GetSceneManager().LoadScene("MissionSelectScene");
+        }
       }
       return;
     }
@@ -940,24 +939,20 @@ void BudgetFlightSimulatorScene::Update(float deltaTime) {
   }
 
   // --- MISSION 10 WAVE STATE MACHINE ---
-  bool overrideEnemyEliminated = true; // Start assuming true for other missions
+  bool overrideEnemyEliminated = true;
   bool isMission10 =
       (m_missionManager.GetCurrentMission() &&
        m_missionManager.GetCurrentMission()->id == "campaign_10_evacuation");
 
   if (isMission10) {
-    overrideEnemyEliminated =
-        false; // Never let the default manager win the mission
+    overrideEnemyEliminated = false;
 
     if (s_mission10Phase == 1) {
-      // Phase 1: Interactive Camera Tracking (waits 4.5 seconds for cargo to
-      // pass)
       s_mission10Timer += deltaTime;
       if (s_mission10Timer >= 4.5f) {
-        s_mission10Phase = 2; // Return camera to player
+        s_mission10Phase = 2;
       }
     } else if (s_mission10Phase == 2) {
-      // Phase 2: Wave 1 Active
       bool w1_alive = false;
       for (auto &e : m_enemyJets) {
         if ((e.id == "mission10_ambush_1" || e.id == "mission10_ambush_2") &&
@@ -966,7 +961,6 @@ void BudgetFlightSimulatorScene::Update(float deltaTime) {
       }
 
       if (!w1_alive) {
-        // Wave 1 is dead, teleport and spawn Wave 2
         for (auto &e : m_enemyJets) {
           if (e.id == "mission10_ambush_3" || e.id == "mission10_ambush_4") {
             e.isAlive = true;
@@ -981,7 +975,6 @@ void BudgetFlightSimulatorScene::Update(float deltaTime) {
         s_mission10Phase = 3;
       }
     } else if (s_mission10Phase == 3) {
-      // Phase 3: Wave 2 Active
       bool w2_alive = false;
       for (auto &e : m_enemyJets) {
         if ((e.id == "mission10_ambush_3" || e.id == "mission10_ambush_4") &&
@@ -990,12 +983,11 @@ void BudgetFlightSimulatorScene::Update(float deltaTime) {
       }
 
       if (!w2_alive) {
-        // Wave 2 is dead, complete mission immediately
-        m_missionManager.AdvanceStage(); // Completes the mission
+        m_missionManager.AdvanceStage();
         s_mission10Phase = 4;
       }
     } else if (s_mission10Phase == 4) {
-      overrideEnemyEliminated = true; // Officially allow completion state
+      overrideEnemyEliminated = true;
     }
   }
 
@@ -1481,7 +1473,6 @@ void BudgetFlightSimulatorScene::Update(float deltaTime) {
     }
   }
 
-  // Static interactive camera override for Phase 1
   if (isMission10 && s_mission10Phase == 1 && !m_cinematicMode) {
     Vector3 cargoPos = m_aircraft.position;
     for (const auto &enemy : m_enemyJets) {

@@ -3,6 +3,7 @@
 #include "raylib.h"
 
 class Engine;
+class Ocean;
 
 class MainMenuScene : public Scene3D {
 public:
@@ -23,7 +24,6 @@ private:
   bool DrawButton(const char *text, Rectangle rect, bool isSelected,
                   float alpha);
 
-  // Intro Sequence State
   float m_introTimer = 0.0f;
   float m_menuAlpha = 0.0f;
   float m_screenShake = 0.0f;
@@ -33,4 +33,13 @@ private:
 
   Sound m_sndFlyby = {0};
   bool m_playedFlyby = false;
+
+  // Moved from static globals to instance members
+  Ocean *m_ocean = nullptr;
+  Font m_mainFont = {0};
+  bool m_mainFontLoaded = false;
+
+  void DrawUIStringMenu(const char *text, float posX, float posY,
+                        float fontSize, Color color, float alphaMulti);
+  float MeasureUIStringMenu(const char *text, float fontSize);
 };
