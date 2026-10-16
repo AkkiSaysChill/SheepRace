@@ -16,6 +16,10 @@
 #include <string>
 #include <vector>
 
+static std::vector<std::vector<char>> s_persistentAudioMemory;
+static int s_mission10Phase = 0;
+static float s_mission10Timer = 0.0f;
+
 BudgetFlightSimulatorScene::BudgetFlightSimulatorScene() : m_engine(nullptr) {}
 
 BudgetFlightSimulatorScene::~BudgetFlightSimulatorScene() { Shutdown(); }
@@ -69,6 +73,10 @@ void BudgetFlightSimulatorScene::Initialize(Engine *engine) {
   Scene3D::Initialize(engine);
   m_engine = engine;
 
+  // Ensure fresh state on restart
+  s_mission10Phase = 0;
+  s_mission10Timer = 0.0f;
+
   const char *fontPath = "DATA/FONTS/Audiowide-Regular.ttf";
   if (FileExists(fontPath)) {
     m_hudFont = LoadFontEx(fontPath, 36, 0, 0);
@@ -113,14 +121,15 @@ void BudgetFlightSimulatorScene::Initialize(Engine *engine) {
     return LoadSound((std::string("assets/audio/") + name).c_str());
   };
 
-  auto LoadMusicFromAssetPacked =
-      [&](const std::string &name, const std::string &tempFilename) -> Music {
+  auto LoadMusicFromAssetPacked = [&](const std::string &name) -> Music {
     std::vector<char> sfxData = assetLoader.getAssetData(name);
     Music music = {};
     if (!sfxData.empty()) {
-      std::string tempPath = std::string("DATA/SFX/") + tempFilename;
-      SaveFileData(tempPath.c_str(), sfxData.data(), (int)sfxData.size());
-      music = LoadMusicStream(tempPath.c_str());
+      s_persistentAudioMemory.push_back(sfxData);
+      const auto &persistentData = s_persistentAudioMemory.back();
+      music = LoadMusicStreamFromMemory(
+          ".wav", (const unsigned char *)persistentData.data(),
+          (int)persistentData.size());
     } else {
       std::string fallbackPath = "assets/audio/" + name;
       music = LoadMusicStream(fallbackPath.c_str());
@@ -135,15 +144,11 @@ void BudgetFlightSimulatorScene::Initialize(Engine *engine) {
   m_sndStall = LoadSoundFromAsset("stall.wav");
   m_sndClick = LoadSoundFromAsset("menu_click.mp3");
 
-  m_sndRain = LoadMusicFromAssetPacked("rain.wav", "temp_rain.wav");
-  m_sndTrainerEngine =
-      LoadMusicFromAssetPacked("trainer.wav", "temp_trainer.wav");
-  m_sndCargoEngine =
-      LoadMusicFromAssetPacked("cargo_engine.wav", "temp_cargo.wav");
-  m_sndJetEngine =
-      LoadMusicFromAssetPacked("jet_mk2_engine.wav", "temp_jet.wav");
-  m_sndSeaDuckEngine =
-      LoadMusicFromAssetPacked("sea_duck_engine.wav", "temp_seaduck.wav");
+  m_sndRain = LoadMusicFromAssetPacked("rain.wav");
+  m_sndTrainerEngine = LoadMusicFromAssetPacked("trainer.wav");
+  m_sndCargoEngine = LoadMusicFromAssetPacked("cargo_engine.wav");
+  m_sndJetEngine = LoadMusicFromAssetPacked("jet_mk2_engine.wav");
+  m_sndSeaDuckEngine = LoadMusicFromAssetPacked("sea_duck_engine.wav");
 
   m_engine->PostProcessingActive = true;
   auto &postProc = m_engine->GetPostProcessing();
@@ -324,15 +329,15 @@ void BudgetFlightSimulatorScene::Initialize(Engine *engine) {
             ace.health = eData.health;
             ace.maxHealth = eData.maxHealth;
             ace.hitRadius = eData.radius;
-            
+
             // Hide story-driven enemies at the start of their missions
             ace.isAlive = true;
-            if (ace.id == "ambush_jet_1" || ace.id == "ambush_jet_2" || 
-                ace.id == "mission10_ambush_1" || ace.id == "mission10_ambush_2" || 
+            if (ace.id.find("mission10_ambush") != std::string::npos ||
+                ace.id == "ambush_jet_1" || ace.id == "ambush_jet_2" ||
                 ace.id == "friendly_airliner") {
-                ace.isAlive = false;
+              ace.isAlive = false;
             }
-            
+
             ace.gunCooldown = 0.0f;
             ace.missileCooldown = 1.0f;
             ace.evadeTimer = 0.0f;
@@ -374,12 +379,14 @@ void BudgetFlightSimulatorScene::Initialize(Engine *engine) {
           Vector3 pRight = m_aircraft.GetRight();
           Vector3 pFwd = m_aircraft.GetForward();
           Vector3 pUp = m_aircraft.GetUp();
-          
+
           float sideOffset = (enemy.id == "ambush_jet_1") ? -80.0f : 80.0f;
-          enemy.position = Vector3Add(m_aircraft.position, 
-              Vector3Add(Vector3Scale(pFwd, -200.0f), 
-              Vector3Add(Vector3Scale(pUp, 50.0f), Vector3Scale(pRight, sideOffset))));
-          
+          enemy.position = Vector3Add(
+              m_aircraft.position,
+              Vector3Add(Vector3Scale(pFwd, -200.0f),
+                         Vector3Add(Vector3Scale(pUp, 50.0f),
+                                    Vector3Scale(pRight, sideOffset))));
+
           enemy.orientation = m_aircraft.orientation;
           enemy.velocity = Vector3Scale(pFwd, 250.0f);
         }
@@ -387,11 +394,13 @@ void BudgetFlightSimulatorScene::Initialize(Engine *engine) {
 
       CameraKeyframe ambushCam{};
       ambushCam.duration = 4.0f;
-      CutsceneController::GetInstance().PlayCutscene("ambush_reveal", ambushCam);
-      
+      CutsceneController::GetInstance().PlayCutscene("ambush_reveal",
+                                                     ambushCam);
+
     } else if (eventName == "DITCH_WATER") {
       HomingMissile m;
-      m.position = Vector3Add(m_aircraft.position, Vector3Scale(m_aircraft.GetForward(), -120.0f));
+      m.position = Vector3Add(m_aircraft.position,
+                              Vector3Scale(m_aircraft.GetForward(), -120.0f));
       m.velocity = Vector3Scale(m_aircraft.GetForward(), 600.0f);
       m.targetPos = m_aircraft.position;
       m.isTrackingPlayer = true;
@@ -402,32 +411,44 @@ void BudgetFlightSimulatorScene::Initialize(Engine *engine) {
       m.damage = 250.0f;
       m.active = true;
       m_missiles.push_back(m);
-      
-    } else if (eventName == "SWITCH_TO_JET") {
-      SwitchAircraft("jet_mk2");
-      m_aircraft.health = 100.0f;
-      m_throttle = 1.0f;
-      m_aircraft.position.y += 30.0f; 
-      m_aircraft.velocity = Vector3Scale(m_aircraft.GetForward(), 220.0f);
 
-      // Spawn the Friendly Airliner and PMC Ambush forces
+    } else if (eventName == "SWITCH_TO_JET") {
+      m_cinematicMode = false;
+
+      // 1. Swap planes immediately to Jet Mk2 and place firmly on runway
+      SwitchAircraft("jet_mk2");
+      m_aircraft.Reset(Vector3{-4500.0f, 111.5f, 150.0f});
+      m_aircraft.orientation =
+          QuaternionFromEuler(0.0f, -90.0f * DEG2RAD, 0.0f); // Point East
+      m_aircraft.isOnGround = true;
+      m_throttle = 0.0f; // Give player manual control of taking off
+
+      // 2. Spawn airliner taking off, and spawn Wave 1 far out
       for (auto &enemy : m_enemyJets) {
         if (enemy.id == "friendly_airliner") {
-            enemy.isAlive = true;
-            // Spawn ahead of player, facing North (-Z) towards South Island Runway
-            enemy.position = Vector3Add(m_aircraft.position, Vector3{0.0f, 150.0f, -600.0f});
-            enemy.orientation = QuaternionFromEuler(0.0f, 0.0f, 0.0f); 
-            enemy.velocity = {0.0f, 0.0f, -140.0f};
-        } else if (enemy.id == "mission10_ambush_1" || enemy.id == "mission10_ambush_2") {
-            enemy.isAlive = true;
-            float side = (enemy.id == "mission10_ambush_1") ? -300.0f : 300.0f;
-            // Spawn PMCs behind the airliner
-            enemy.position = Vector3Add(m_aircraft.position, Vector3{side, 300.0f, 1500.0f});
-            enemy.orientation = QuaternionFromEuler(0.0f, 0.0f, 0.0f);
-            enemy.velocity = {0.0f, 0.0f, -190.0f};
+          enemy.isAlive = true;
+          enemy.position = Vector3{-4300.0f, 111.5f, 150.0f}; // 200m ahead
+          enemy.velocity = Vector3{160.0f, 12.0f, 0.0f};      // Fast takeoff
+          enemy.orientation = QuaternionFromEuler(0.0f, -90.0f * DEG2RAD, 0.0f);
+        } else if (enemy.id == "mission10_ambush_1") {
+          enemy.isAlive = true;
+          enemy.position = Vector3Add(m_aircraft.position,
+                                      Vector3{3000.0f, 1800.0f, -800.0f});
+          enemy.velocity = Vector3{-190.0f, 0.0f, 0.0f};
+          enemy.orientation = QuaternionFromEuler(0.0f, 90.0f * DEG2RAD, 0.0f);
+        } else if (enemy.id == "mission10_ambush_2") {
+          enemy.isAlive = true;
+          enemy.position = Vector3Add(m_aircraft.position,
+                                      Vector3{3200.0f, 1900.0f, -1000.0f});
+          enemy.velocity = Vector3{-190.0f, 0.0f, 0.0f};
+          enemy.orientation = QuaternionFromEuler(0.0f, 90.0f * DEG2RAD, 0.0f);
         }
       }
-      
+
+      // 3. Trigger Custom Camera Tracking Phase
+      s_mission10Phase = 1;
+      s_mission10Timer = 0.0f;
+
     } else if (eventName == "TRIGGER_AA_TRAP") {
       CameraKeyframe kf{};
       kf.duration = 3.6f;
@@ -463,7 +484,7 @@ void BudgetFlightSimulatorScene::Initialize(Engine *engine) {
       CameraKeyframe kf{};
       kf.duration = 4.5f;
       CutsceneController::GetInstance().PlayCutscene("cam_boss_silhouette", kf);
-    } 
+    }
   });
 
   std::string targetMission = FlightSession::GetInstance().activeMissionId;
@@ -479,52 +500,67 @@ void BudgetFlightSimulatorScene::UpdateDogfight(float deltaTime) {
 
     // ----- FRIENDLY AIRLINER ESCORT LOGIC -----
     if (enemy.id == "friendly_airliner") {
-        Vector3 targetPos = {0.0f, 300.0f, -7200.0f}; // South Runway marker
-        Vector3 toTarget = Vector3Subtract(targetPos, enemy.position);
-        Vector3 desiredDir = Vector3Normalize(toTarget);
-        
-        Vector3 right = Vector3Normalize(Vector3CrossProduct(desiredDir, Vector3{0.0f, 1.0f, 0.0f}));
-        if (Vector3Length(right) < 0.01f) right = Vector3{1.0f, 0.0f, 0.0f};
-        Vector3 bankUp = Vector3Normalize(Vector3CrossProduct(right, desiredDir));
+      Vector3 targetPos = {0.0f, 150.0f, -6800.0f}; // South Runway approach
+      Vector3 toTarget = Vector3Subtract(targetPos, enemy.position);
+      Vector3 desiredDir = Vector3Normalize(toTarget);
 
-        Matrix targetMat = {right.x, bankUp.x, -desiredDir.x, 0.0f,
-                            right.y, bankUp.y, -desiredDir.y, 0.0f,
-                            right.z, bankUp.z, -desiredDir.z, 0.0f,
-                            0.0f,    0.0f,     0.0f,          1.0f};
-        Quaternion targetQuat = QuaternionFromMatrix(targetMat);
-        
-        enemy.orientation = QuaternionNormalize(QuaternionSlerp(enemy.orientation, targetQuat, 0.5f * deltaTime));
-        Vector3 enemyFwd = Vector3RotateByQuaternion(Vector3{0.0f, 0.0f, -1.0f}, enemy.orientation);
-        enemy.velocity = Vector3Scale(enemyFwd, 150.0f);
-        enemy.position = Vector3Add(enemy.position, Vector3Scale(enemy.velocity, deltaTime));
-        continue; // Friendly plane doesn't evade or shoot
+      Vector3 right = Vector3Normalize(
+          Vector3CrossProduct(desiredDir, Vector3{0.0f, 1.0f, 0.0f}));
+      if (Vector3Length(right) < 0.01f)
+        right = Vector3{1.0f, 0.0f, 0.0f};
+      Vector3 bankUp = Vector3Normalize(Vector3CrossProduct(right, desiredDir));
+
+      Matrix targetMat = {right.x, bankUp.x, -desiredDir.x, 0.0f,
+                          right.y, bankUp.y, -desiredDir.y, 0.0f,
+                          right.z, bankUp.z, -desiredDir.z, 0.0f,
+                          0.0f,    0.0f,     0.0f,          1.0f};
+      Quaternion targetQuat = QuaternionFromMatrix(targetMat);
+
+      enemy.orientation = QuaternionNormalize(
+          QuaternionSlerp(enemy.orientation, targetQuat, 0.5f * deltaTime));
+      Vector3 enemyFwd = Vector3RotateByQuaternion(Vector3{0.0f, 0.0f, -1.0f},
+                                                   enemy.orientation);
+      enemy.velocity = Vector3Scale(enemyFwd, 150.0f);
+      enemy.position =
+          Vector3Add(enemy.position, Vector3Scale(enemy.velocity, deltaTime));
+      continue; // Friendly plane doesn't evade or shoot
     }
 
     // ----- DYNAMIC TARGETING (PMCs Target Airliner over Player) -----
     Vector3 actualTargetPos = m_aircraft.position;
     bool targetingAirliner = false;
     for (const auto &other : m_enemyJets) {
-        if (other.id == "friendly_airliner" && other.isAlive) {
-            actualTargetPos = other.position;
-            targetingAirliner = true;
-            break;
-        }
+      if (other.id == "friendly_airliner" && other.isAlive) {
+        actualTargetPos = other.position;
+        targetingAirliner = true;
+        break;
+      }
     }
 
-    if (enemy.gunCooldown > 0.0f) enemy.gunCooldown -= deltaTime;
-    if (enemy.missileCooldown > 0.0f) enemy.missileCooldown -= deltaTime;
+    if (enemy.gunCooldown > 0.0f)
+      enemy.gunCooldown -= deltaTime;
+    if (enemy.missileCooldown > 0.0f)
+      enemy.missileCooldown -= deltaTime;
 
-    Vector3 enemyFwd = Vector3RotateByQuaternion(Vector3{0.0f, 0.0f, -1.0f}, enemy.orientation);
-    Vector3 enemyUp = Vector3RotateByQuaternion(Vector3{0.0f, 1.0f, 0.0f}, enemy.orientation);
+    Vector3 enemyFwd = Vector3RotateByQuaternion(Vector3{0.0f, 0.0f, -1.0f},
+                                                 enemy.orientation);
+    Vector3 enemyUp =
+        Vector3RotateByQuaternion(Vector3{0.0f, 1.0f, 0.0f}, enemy.orientation);
 
     Vector3 toPlayer = Vector3Subtract(actualTargetPos, enemy.position);
     float distToPlayer = Vector3Length(toPlayer);
-    Vector3 dirToPlayer = (distToPlayer > 0.001f) ? Vector3Scale(toPlayer, 1.0f / distToPlayer) : enemyFwd;
+    Vector3 dirToPlayer = (distToPlayer > 0.001f)
+                              ? Vector3Scale(toPlayer, 1.0f / distToPlayer)
+                              : enemyFwd;
 
     // Only evade the player, never the airliner
-    Vector3 playerFwd = Vector3RotateByQuaternion(Vector3{0.0f, 0.0f, -1.0f}, m_aircraft.orientation);
-    Vector3 playerToEnemy = Vector3Scale(Vector3Subtract(m_aircraft.position, enemy.position), -1.0f);
-    Vector3 dirPlayerToEnemy = (Vector3Length(playerToEnemy) > 0.001f) ? Vector3Normalize(playerToEnemy) : Vector3{0, 0, 1};
+    Vector3 playerFwd = Vector3RotateByQuaternion(Vector3{0.0f, 0.0f, -1.0f},
+                                                  m_aircraft.orientation);
+    Vector3 playerToEnemy = Vector3Scale(
+        Vector3Subtract(m_aircraft.position, enemy.position), -1.0f);
+    Vector3 dirPlayerToEnemy = (Vector3Length(playerToEnemy) > 0.001f)
+                                   ? Vector3Normalize(playerToEnemy)
+                                   : Vector3{0, 0, 1};
 
     float enemyNoseAlignment = Vector3DotProduct(enemyFwd, dirToPlayer);
     float playerNoseAlignment = Vector3DotProduct(playerFwd, dirPlayerToEnemy);
@@ -539,36 +575,54 @@ void BudgetFlightSimulatorScene::UpdateDogfight(float deltaTime) {
     Vector3 desiredDir;
 
     if (enemy.evadeTimer > 0.0f) {
-      Vector3 breakDir = Vector3CrossProduct(enemyFwd, Vector3{0.0f, 1.0f, 0.0f});
-      if (Vector3Length(breakDir) < 0.01f) breakDir = Vector3{1.0f, 0.0f, 0.0f};
+      Vector3 breakDir =
+          Vector3CrossProduct(enemyFwd, Vector3{0.0f, 1.0f, 0.0f});
+      if (Vector3Length(breakDir) < 0.01f)
+        breakDir = Vector3{1.0f, 0.0f, 0.0f};
 
-      desiredDir = Vector3Normalize(Vector3Add(enemyFwd, Vector3Scale(breakDir, 1.1f)));
-      desiredDir = Vector3Normalize(Vector3Add(desiredDir, Vector3{0.0f, 0.15f, 0.0f}));
+      desiredDir =
+          Vector3Normalize(Vector3Add(enemyFwd, Vector3Scale(breakDir, 1.1f)));
+      desiredDir =
+          Vector3Normalize(Vector3Add(desiredDir, Vector3{0.0f, 0.15f, 0.0f}));
     } else if (distToPlayer < 240.0f) {
-      desiredDir = Vector3Normalize(Vector3Add(enemyFwd, Vector3{0.0f, 0.5f, 0.0f}));
+      desiredDir =
+          Vector3Normalize(Vector3Add(enemyFwd, Vector3{0.0f, 0.5f, 0.0f}));
     } else {
-      Vector3 imperfectTarget = Vector3Add(actualTargetPos, Vector3Scale(targetingAirliner ? Vector3{0,0,-150.0f} : m_aircraft.velocity, 0.25f));
+      Vector3 imperfectTarget =
+          Vector3Add(actualTargetPos,
+                     Vector3Scale(targetingAirliner ? Vector3{0, 0, -150.0f}
+                                                    : m_aircraft.velocity,
+                                  0.25f));
       Vector3 toTarget = Vector3Subtract(imperfectTarget, enemy.position);
       float targetDist = Vector3Length(toTarget);
-      desiredDir = (targetDist > 1.0f) ? Vector3Scale(toTarget, 1.0f / targetDist) : enemyFwd;
+      desiredDir = (targetDist > 1.0f)
+                       ? Vector3Scale(toTarget, 1.0f / targetDist)
+                       : enemyFwd;
     }
 
     float forwardSpeed = Vector3Length(enemy.velocity);
     float lookAheadDist = fmaxf(forwardSpeed * 2.0f, 220.0f);
-    Vector3 probePos = Vector3Add(enemy.position, Vector3Scale(enemyFwd, lookAheadDist));
+    Vector3 probePos =
+        Vector3Add(enemy.position, Vector3Scale(enemyFwd, lookAheadDist));
 
-    float currentGroundH = m_terrain.GetHeightAt(enemy.position.x, enemy.position.z);
+    float currentGroundH =
+        m_terrain.GetHeightAt(enemy.position.x, enemy.position.z);
     float futureGroundH = m_terrain.GetHeightAt(probePos.x, probePos.z);
     float minSafeAlt = fmaxf(futureGroundH, 1.0f) + 90.0f;
 
-    if (probePos.y < minSafeAlt || enemy.position.y < (currentGroundH + 70.0f)) {
-      float pullUpStrength = Clamp((minSafeAlt - probePos.y) / 45.0f, 1.0f, 3.5f);
-      desiredDir = Vector3Normalize(Vector3Add(desiredDir, Vector3{0.0f, pullUpStrength, 0.0f}));
+    if (probePos.y < minSafeAlt ||
+        enemy.position.y < (currentGroundH + 70.0f)) {
+      float pullUpStrength =
+          Clamp((minSafeAlt - probePos.y) / 45.0f, 1.0f, 3.5f);
+      desiredDir = Vector3Normalize(
+          Vector3Add(desiredDir, Vector3{0.0f, pullUpStrength, 0.0f}));
     }
 
-    Vector3 right = Vector3Normalize(Vector3CrossProduct(desiredDir, Vector3{0.0f, 1.0f, 0.0f}));
+    Vector3 right = Vector3Normalize(
+        Vector3CrossProduct(desiredDir, Vector3{0.0f, 1.0f, 0.0f}));
     if (Vector3Length(right) < 0.01f) {
-      right = Vector3RotateByQuaternion(Vector3{1.0f, 0.0f, 0.0f}, enemy.orientation);
+      right = Vector3RotateByQuaternion(Vector3{1.0f, 0.0f, 0.0f},
+                                        enemy.orientation);
     }
     Vector3 bankUp = Vector3Normalize(Vector3CrossProduct(right, desiredDir));
 
@@ -578,17 +632,31 @@ void BudgetFlightSimulatorScene::UpdateDogfight(float deltaTime) {
                         0.0f,    0.0f,     0.0f,          1.0f};
     Quaternion targetQuat = QuaternionFromMatrix(targetMat);
 
-    float angleToTarget = acosf(Clamp(Vector3DotProduct(enemyFwd, desiredDir), -1.0f, 1.0f));
-    float maxTurnRate = (enemy.id == "commander_boss") ? 0.62f : 0.46f;
+    float angleToTarget =
+        acosf(Clamp(Vector3DotProduct(enemyFwd, desiredDir), -1.0f, 1.0f));
+    float maxTurnRate =
+        (enemy.id.find("mission10_ambush_5") != std::string::npos ||
+         enemy.id.find("mission10_ambush_6") != std::string::npos ||
+         enemy.id == "commander_boss")
+            ? 0.62f
+            : 0.46f;
     float maxStep = maxTurnRate * deltaTime;
-    float slerpFactor = (angleToTarget > 0.001f) ? fminf(maxStep / angleToTarget, 1.0f) : 1.0f;
+    float slerpFactor =
+        (angleToTarget > 0.001f) ? fminf(maxStep / angleToTarget, 1.0f) : 1.0f;
 
-    enemy.orientation = QuaternionNormalize(QuaternionSlerp(enemy.orientation, targetQuat, slerpFactor));
-    enemyFwd = Vector3RotateByQuaternion(Vector3{0.0f, 0.0f, -1.0f}, enemy.orientation);
+    enemy.orientation = QuaternionNormalize(
+        QuaternionSlerp(enemy.orientation, targetQuat, slerpFactor));
+    enemyFwd = Vector3RotateByQuaternion(Vector3{0.0f, 0.0f, -1.0f},
+                                         enemy.orientation);
 
-    float throttle = (enemy.id == "commander_boss") ? 195.0f : ((enemy.evadeTimer > 0.0f) ? 165.0f : 140.0f);
+    float throttle =
+        (enemy.id == "commander_boss" || enemy.id == "mission10_ambush_5" ||
+         enemy.id == "mission10_ambush_6")
+            ? 195.0f
+            : ((enemy.evadeTimer > 0.0f) ? 165.0f : 140.0f);
     enemy.velocity = Vector3Scale(enemyFwd, throttle);
-    enemy.position = Vector3Add(enemy.position, Vector3Scale(enemy.velocity, deltaTime));
+    enemy.position =
+        Vector3Add(enemy.position, Vector3Scale(enemy.velocity, deltaTime));
 
     float hardDeck = fmaxf(currentGroundH, 1.0f) + 30.0f;
     if (enemy.position.y < hardDeck) {
@@ -611,7 +679,6 @@ void BudgetFlightSimulatorScene::UpdateDogfight(float deltaTime) {
       m_bullets.push_back(b);
     }
 
-    // Do not fire homing missiles at the airliner as it cannot evade
     if (enemy.evadeTimer <= 0.0f && gunAlignment > 0.88f &&
         distToPlayer >= 800.0f && distToPlayer <= 1300.0f &&
         enemy.missileCooldown <= 0.0f && !targetingAirliner) {
@@ -670,20 +737,20 @@ void BudgetFlightSimulatorScene::UpdateProjectiles(float deltaTime) {
         if (m_bulletSparkEmitter)
           m_bulletSparkEmitter->Emit(18, b.position);
       }
-      
-      // Enemy bullets can also damage the friendly airliner!
+
       for (auto &enemy : m_enemyJets) {
         if (enemy.id == "friendly_airliner" && enemy.isAlive) {
           if (Vector3Distance(b.position, enemy.position) <= enemy.hitRadius) {
             b.active = false;
             enemy.health -= 5.0f;
-            if (m_bulletSparkEmitter) m_bulletSparkEmitter->Emit(18, b.position);
-            
+            if (m_bulletSparkEmitter)
+              m_bulletSparkEmitter->Emit(18, b.position);
+
             if (enemy.health <= 0.0f) {
               enemy.isAlive = false;
               TriggerExplosionFX(enemy.position, 3.5f);
               if (!m_missionManager.IsCompleted()) {
-                 m_missionManager.FailMission();
+                m_missionManager.FailMission();
               }
             }
           }
@@ -715,66 +782,70 @@ void BudgetFlightSimulatorScene::UpdateProjectiles(float deltaTime) {
     float distToTarget = 0.0f;
     float effectiveTurnRate = 2.4f;
 
+    Vector3 targetVel = {0};
+    Vector3 dirToTarget = {0};
+
     if (m.isTrackingPlayer) {
+      targetVel = m_aircraft.velocity;
       Vector3 toPlayer = Vector3Subtract(m_aircraft.position, m.position);
-      float distToPlayer = Vector3Length(toPlayer);
-      distToTarget = distToPlayer;
-
-      Vector3 dirToPlayer = (distToPlayer > 0.001f)
-                                ? Vector3Scale(toPlayer, 1.0f / distToPlayer)
-                                : currentDir;
-
-      float seekerAlignment = Vector3DotProduct(currentDir, dirToPlayer);
-      if (seekerAlignment < 0.67f) {
-        m.isTrackingPlayer = false;
-      }
-
-      if (distToTarget < 75.0f) {
-        effectiveTurnRate = 0.4f;
-      }
-
-      Vector3 playerLateralVel = Vector3Subtract(
-          m_aircraft.velocity,
-          Vector3Scale(dirToPlayer,
-                       Vector3DotProduct(m_aircraft.velocity, dirToPlayer)));
-      float crossVelocity = Vector3Length(playerLateralVel);
-
-      float evasionBonus = (crossVelocity * 0.45f) +
-                           (fabsf(m_aircraft.angularVelocity.x) * 12.0f);
-
-      float timeToHit =
-          Clamp(distToTarget / fmaxf(m.speed, 100.0f), 0.0f, 2.0f);
-      Vector3 imperfectLead =
-          Vector3Scale(m_aircraft.velocity, timeToHit * 0.6f);
-
-      float t = (float)GetTime() * 4.0f + m.life;
-      Vector3 trackingWander = {sinf(t * 1.5f) * (evasionBonus + 8.0f),
-                                cosf(t * 1.2f) * (evasionBonus * 0.5f + 4.0f),
-                                sinf(t * 2.0f) * (evasionBonus + 8.0f)};
-
-      m.targetPos = Vector3Add(Vector3Add(m_aircraft.position, imperfectLead),
-                               trackingWander);
-
+      distToTarget = Vector3Length(toPlayer);
+      dirToTarget = (distToTarget > 0.001f)
+                        ? Vector3Scale(toPlayer, 1.0f / distToTarget)
+                        : currentDir;
+      m.targetPos = m_aircraft.position;
     } else {
       float closestDist = 99999.0f;
-      for (const auto &enemy : m_enemyJets) {
+      EnemyAce *tgtEnemy = nullptr;
+      for (auto &enemy : m_enemyJets) {
         if (!enemy.isAlive)
           continue;
         float d = Vector3Distance(m.position, enemy.position);
         if (d < closestDist) {
           closestDist = d;
           m.targetPos = enemy.position;
+          tgtEnemy = &enemy;
         }
       }
       distToTarget = closestDist;
+      if (tgtEnemy) {
+        targetVel = tgtEnemy->velocity;
+        Vector3 toE = Vector3Subtract(tgtEnemy->position, m.position);
+        dirToTarget = (distToTarget > 0.001f)
+                          ? Vector3Scale(toE, 1.0f / distToTarget)
+                          : currentDir;
+      } else {
+        dirToTarget = currentDir;
+      }
     }
 
-    Vector3 toTarget = Vector3Subtract(m.targetPos, m.position);
-    float lenToTarget = Vector3Length(toTarget);
+    float seekerAlignment = Vector3DotProduct(currentDir, dirToTarget);
+    if (seekerAlignment < 0.64f) {
+      effectiveTurnRate = 0.0f;
+    } else {
+      Vector3 lateralVel = Vector3Subtract(
+          targetVel,
+          Vector3Scale(dirToTarget, Vector3DotProduct(targetVel, dirToTarget)));
+      float crossVel = Vector3Length(lateralVel);
 
-    if (lenToTarget > 1.0f) {
-      Vector3 desiredDir = Vector3Scale(toTarget, 1.0f / lenToTarget);
+      if (crossVel > 45.0f) {
+        effectiveTurnRate =
+            Clamp(effectiveTurnRate - (crossVel * 0.025f), 0.15f, 2.4f);
+        m.targetPos =
+            Vector3Add(m.targetPos, Vector3Scale(Vector3Normalize(lateralVel),
+                                                 crossVel * 0.5f));
+      } else {
+        float timeToHit =
+            Clamp(distToTarget / fmaxf(m.speed, 100.0f), 0.0f, 2.0f);
+        m.targetPos =
+            Vector3Add(m.targetPos, Vector3Scale(targetVel, timeToHit * 0.8f));
+      }
+    }
 
+    Vector3 toTargetFinal = Vector3Subtract(m.targetPos, m.position);
+    float lenToTargetFinal = Vector3Length(toTargetFinal);
+
+    if (lenToTargetFinal > 1.0f) {
+      Vector3 desiredDir = Vector3Scale(toTargetFinal, 1.0f / lenToTargetFinal);
       float angleDiff =
           acosf(Clamp(Vector3DotProduct(currentDir, desiredDir), -1.0f, 1.0f));
       float maxAngleStep = effectiveTurnRate * deltaTime;
@@ -866,6 +937,66 @@ void BudgetFlightSimulatorScene::Update(float deltaTime) {
   if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) ||
       IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
     DisableCursor();
+  }
+
+  // --- MISSION 10 WAVE STATE MACHINE ---
+  bool overrideEnemyEliminated = true; // Start assuming true for other missions
+  bool isMission10 =
+      (m_missionManager.GetCurrentMission() &&
+       m_missionManager.GetCurrentMission()->id == "campaign_10_evacuation");
+
+  if (isMission10) {
+    overrideEnemyEliminated =
+        false; // Never let the default manager win the mission
+
+    if (s_mission10Phase == 1) {
+      // Phase 1: Interactive Camera Tracking (waits 4.5 seconds for cargo to
+      // pass)
+      s_mission10Timer += deltaTime;
+      if (s_mission10Timer >= 4.5f) {
+        s_mission10Phase = 2; // Return camera to player
+      }
+    } else if (s_mission10Phase == 2) {
+      // Phase 2: Wave 1 Active
+      bool w1_alive = false;
+      for (auto &e : m_enemyJets) {
+        if ((e.id == "mission10_ambush_1" || e.id == "mission10_ambush_2") &&
+            e.isAlive)
+          w1_alive = true;
+      }
+
+      if (!w1_alive) {
+        // Wave 1 is dead, teleport and spawn Wave 2
+        for (auto &e : m_enemyJets) {
+          if (e.id == "mission10_ambush_3" || e.id == "mission10_ambush_4") {
+            e.isAlive = true;
+            e.position = Vector3Add(
+                m_aircraft.position,
+                Vector3{(e.id == "mission10_ambush_3" ? 2000.0f : 2200.0f),
+                        300.0f, -1200.0f});
+            e.velocity = Vector3{-200.0f, 0.0f, 0.0f};
+            e.orientation = QuaternionFromEuler(0.0f, 90.0f * DEG2RAD, 0.0f);
+          }
+        }
+        s_mission10Phase = 3;
+      }
+    } else if (s_mission10Phase == 3) {
+      // Phase 3: Wave 2 Active
+      bool w2_alive = false;
+      for (auto &e : m_enemyJets) {
+        if ((e.id == "mission10_ambush_3" || e.id == "mission10_ambush_4") &&
+            e.isAlive)
+          w2_alive = true;
+      }
+
+      if (!w2_alive) {
+        // Wave 2 is dead, complete mission immediately
+        m_missionManager.AdvanceStage(); // Completes the mission
+        s_mission10Phase = 4;
+      }
+    } else if (s_mission10Phase == 4) {
+      overrideEnemyEliminated = true; // Officially allow completion state
+    }
   }
 
   const auto &planeIds = AircraftDatabase::GetInstance().GetAllPlaneIds();
@@ -985,7 +1116,8 @@ void BudgetFlightSimulatorScene::Update(float deltaTime) {
         QuaternionMultiply(m_aircraft.orientation, perturb));
   }
 
-  if (m_aircraft.health <= 0.0f && !m_missionManager.IsFailed() && !m_missionManager.IsCompleted()) {
+  if (m_aircraft.health <= 0.0f && !m_missionManager.IsFailed() &&
+      !m_missionManager.IsCompleted()) {
     m_throttle = 0.0f;
 
     if (m_runwaySmokeEmitter)
@@ -1011,9 +1143,9 @@ void BudgetFlightSimulatorScene::Update(float deltaTime) {
     if (m_aircraft.position.y <= impactAltitude) {
       m_aircraft.position.y = impactAltitude;
       TriggerExplosionFX(m_aircraft.position, 3.5f);
-      
+
       if (!m_missionManager.IsCompleted()) {
-          m_missionManager.FailMission();
+        m_missionManager.FailMission();
       }
     }
   }
@@ -1132,9 +1264,24 @@ void BudgetFlightSimulatorScene::Update(float deltaTime) {
       }
     }
   } else if (!m_isFrozen && !m_missionManager.IsFailed()) {
-    FlightInput idleInput{};
-    idleInput.throttle = m_throttle;
-    m_aircraft.Update(idleInput, deltaTime);
+    FlightInput autoInput{};
+    autoInput.throttle = m_throttle;
+
+    if (CutsceneController::GetInstance().IsPlaying()) {
+      std::string cid =
+          CutsceneController::GetInstance().GetCurrentCutsceneId();
+      if (cid == "cargo_flyby") {
+        m_throttle = 0.7f;
+        autoInput.throttle = m_throttle;
+        autoInput.pitch = -0.05f;
+      } else if (cid == "jet_takeoff") {
+        m_throttle = 1.0f;
+        autoInput.throttle = m_throttle;
+        autoInput.pitch = -0.05f;
+      }
+    }
+
+    m_aircraft.Update(autoInput, deltaTime);
 
     if (m_engineFailed && m_aircraft.health > 0.0f) {
       Vector3 planePos = m_aircraft.position;
@@ -1247,8 +1394,10 @@ void BudgetFlightSimulatorScene::Update(float deltaTime) {
     } else if (cutId == "ambush_reveal") {
       for (const auto &enemy : m_enemyJets) {
         if (enemy.id == "ambush_jet_1") {
-          flyCam.position = Vector3Add(m_aircraft.position, Vector3{40.0f, 35.0f, 60.0f});
-          flyCam.target = Vector3Lerp(m_aircraft.position, enemy.position, 0.85f);
+          flyCam.position =
+              Vector3Add(m_aircraft.position, Vector3{40.0f, 35.0f, 60.0f});
+          flyCam.target =
+              Vector3Lerp(m_aircraft.position, enemy.position, 0.85f);
           flyCam.up = pUp;
           break;
         }
@@ -1330,6 +1479,20 @@ void BudgetFlightSimulatorScene::Update(float deltaTime) {
       flyCam.position.y = Lerp(flyCam.position.y, minAllowedY,
                                Clamp(12.0f * deltaTime, 0.0f, 1.0f));
     }
+  }
+
+  // Static interactive camera override for Phase 1
+  if (isMission10 && s_mission10Phase == 1 && !m_cinematicMode) {
+    Vector3 cargoPos = m_aircraft.position;
+    for (const auto &enemy : m_enemyJets) {
+      if (enemy.id == "friendly_airliner") {
+        cargoPos = enemy.position;
+        break;
+      }
+    }
+    flyCam.position = Vector3{-3500.0f, 115.0f, 220.0f};
+    flyCam.target = cargoPos;
+    flyCam.up = Vector3{0.0f, 1.0f, 0.0f};
   }
 
   if (m_screenShakeIntensity > 0.0f) {
@@ -1430,26 +1593,26 @@ void BudgetFlightSimulatorScene::Update(float deltaTime) {
     m_particleSystem.Update(deltaTime);
   }
 
-  // Proper objective check evaluating active spawned hostiles only
   bool enemyEliminated = true;
   bool activeHostilesFound = false;
-  
+
   for (const auto &enemy : m_enemyJets) {
-      // Ignore the friendly escort from kill requirements
-      if (enemy.id != "friendly_airliner") {
-          // Only count enemies that have been spawned in (above Y=-100)
-          if (enemy.position.y > -100.0f) {
-              activeHostilesFound = true;
-              if (enemy.isAlive) {
-                  enemyEliminated = false;
-              }
-          }
+    if (enemy.id != "friendly_airliner") {
+      if (enemy.position.y > -100.0f) {
+        activeHostilesFound = true;
+        if (enemy.isAlive) {
+          enemyEliminated = false;
+        }
       }
+    }
   }
-  
-  // If no hostiles have spawned yet, the objective isn't met
+
   if (!activeHostilesFound) {
-      enemyEliminated = false;
+    enemyEliminated = false;
+  }
+
+  if (isMission10) {
+    enemyEliminated = overrideEnemyEliminated;
   }
 
   Shader currentPostShader = m_engine->GetPostProcessing().GetCurrentShader();
@@ -1584,22 +1747,25 @@ void BudgetFlightSimulatorScene::DrawRadarHUD(int screenWidth,
     if (outOfRange) {
       DrawCircle((int)blipX, (int)blipY, 2.5f, Fade(RED, 0.6f));
     } else {
-      // Different color/shape for friendly escort
       if (enemy.id == "friendly_airliner") {
-          DrawRectanglePro(Rectangle{blipX, blipY, 6.0f, 6.0f}, Vector2{3.0f, 3.0f}, 45.0f, SKYBLUE);
+        DrawRectanglePro(Rectangle{blipX, blipY, 6.0f, 6.0f},
+                         Vector2{3.0f, 3.0f}, 45.0f, SKYBLUE);
       } else {
-          DrawRectanglePro(Rectangle{blipX, blipY, 6.0f, 6.0f}, Vector2{3.0f, 3.0f}, 45.0f, RED);
+        DrawRectanglePro(Rectangle{blipX, blipY, 6.0f, 6.0f},
+                         Vector2{3.0f, 3.0f}, 45.0f, RED);
       }
 
       float altDiff = enemy.position.y - m_aircraft.position.y;
       if (altDiff > 50.0f) {
         DrawTriangle(Vector2{blipX, blipY - 6.0f},
                      Vector2{blipX - 3.0f, blipY - 3.0f},
-                     Vector2{blipX + 3.0f, blipY - 3.0f}, (enemy.id == "friendly_airliner" ? SKYBLUE : RED));
+                     Vector2{blipX + 3.0f, blipY - 3.0f},
+                     (enemy.id == "friendly_airliner" ? SKYBLUE : RED));
       } else if (altDiff < -50.0f) {
         DrawTriangle(Vector2{blipX - 3.0f, blipY + 3.0f},
                      Vector2{blipX, blipY + 6.0f},
-                     Vector2{blipX + 3.0f, blipY + 3.0f}, (enemy.id == "friendly_airliner" ? SKYBLUE : RED));
+                     Vector2{blipX + 3.0f, blipY + 3.0f},
+                     (enemy.id == "friendly_airliner" ? SKYBLUE : RED));
       }
     }
   }
@@ -1724,15 +1890,16 @@ void BudgetFlightSimulatorScene::Draw3D() {
           AircraftStats cargoStats;
           bool drawn = false;
           if (AircraftDatabase::GetInstance().GetStats("cargo", cargoStats)) {
-             auto it = m_loadedAircraftModels.find(cargoStats.modelFile);
-             if (it != m_loadedAircraftModels.end()) {
-                 DrawAnimatedAircraftModel(it->second, enemy.position, enemy.orientation, "cargo");
-                 drawn = true;
-             }
+            auto it = m_loadedAircraftModels.find(cargoStats.modelFile);
+            if (it != m_loadedAircraftModels.end()) {
+              DrawAnimatedAircraftModel(it->second, enemy.position,
+                                        enemy.orientation, "cargo");
+              drawn = true;
+            }
           }
           if (!drawn && m_cargoModelLoaded) {
-             m_cargoModel.transform = QuaternionToMatrix(enemy.orientation);
-             DrawModel(m_cargoModel, enemy.position, 1.0f, WHITE);
+            m_cargoModel.transform = QuaternionToMatrix(enemy.orientation);
+            DrawModel(m_cargoModel, enemy.position, 1.0f, WHITE);
           }
         } else {
           m_enemyJetModel.transform = QuaternionToMatrix(enemy.orientation);
@@ -2013,6 +2180,7 @@ void BudgetFlightSimulatorScene::DrawAltitudeBar(float altitudeM,
 void BudgetFlightSimulatorScene::DrawPitchLadderHUD(float pitchDeg,
                                                     float rollDeg,
                                                     int screenHeight) {
+  // 1. Maintain original box projection placement in the bottom-left corner
   const float boxW = 160.0f;
   const float boxH = 160.0f;
   const float posX = 24.0f;
@@ -2023,6 +2191,7 @@ void BudgetFlightSimulatorScene::DrawPitchLadderHUD(float pitchDeg,
   Rectangle pitchRect = {posX, posY, boxW, boxH};
   DrawGlassPanel(pitchRect, 0.22f, Color{14, 26, 42, 175});
 
+  // UI Headers
   DrawUIString("ATTITUDE", posX + 12.0f, posY + 8.0f, 11.0f,
                Color{255, 215, 0, 255});
   DrawUIString(TextFormat("P: %+.1f°", pitchDeg), posX + 12.0f, posY + 23.0f,
@@ -2033,11 +2202,9 @@ void BudgetFlightSimulatorScene::DrawPitchLadderHUD(float pitchDeg,
   BeginScissorMode((int)posX + 6, (int)posY + 38, (int)boxW - 12,
                    (int)boxH - 44);
 
-  float rad = rollDeg * DEG2RAD;
-  float cosR = cosf(rad);
-  float sinR = sinf(rad);
   float pxPerDeg = 2.2f;
 
+  // 2. Draw Pitch Ladder (Lines stay perfectly horizontal, sliding up and down)
   for (int p = -80; p <= 80; p += 10) {
     if (p == 0)
       continue;
@@ -2046,35 +2213,51 @@ void BudgetFlightSimulatorScene::DrawPitchLadderHUD(float pitchDeg,
     Color barCol =
         (p > 0) ? Color{100, 245, 140, 230} : Color{90, 190, 255, 230};
 
-    Vector2 l1 = {cx + (-barLen * cosR - dy * -sinR),
-                  cy + (-barLen * sinR + dy * cosR)};
-    Vector2 l2 = {cx + (-8.0f * cosR - dy * -sinR),
-                  cy + (-8.0f * sinR + dy * cosR)};
+    // Left and Right horizontal bars
+    Vector2 l1 = {cx - barLen, cy + dy};
+    Vector2 l2 = {cx - 8.0f, cy + dy};
     DrawLineEx(l1, l2, 2.0f, barCol);
 
-    Vector2 r1 = {cx + (8.0f * cosR - dy * -sinR),
-                  cy + (8.0f * sinR + dy * cosR)};
-    Vector2 r2 = {cx + (barLen * cosR - dy * -sinR),
-                  cy + (barLen * sinR + dy * cosR)};
+    Vector2 r1 = {cx + 8.0f, cy + dy};
+    Vector2 r2 = {cx + barLen, cy + dy};
     DrawLineEx(r1, r2, 2.0f, barCol);
+
+    // Ticks point towards the artificial horizon (0 degrees)
+    float tickDir = (p > 0) ? 6.0f : -6.0f;
+    DrawLineEx(l1, Vector2{l1.x, l1.y + tickDir}, 2.0f, barCol);
+    DrawLineEx(r2, Vector2{r2.x, r2.y + tickDir}, 2.0f, barCol);
   }
 
+  // Draw Artificial Horizon Line (0 degrees)
   float horDy = pitchDeg * pxPerDeg;
-  Vector2 hLeft = {cx + (-55.0f * cosR - horDy * -sinR),
-                   cy + (-55.0f * sinR + horDy * cosR)};
-  Vector2 hRight = {cx + (55.0f * cosR - horDy * -sinR),
-                    cy + (55.0f * sinR + horDy * cosR)};
+  Vector2 hLeft = {cx - 55.0f, cy + horDy};
+  Vector2 hRight = {cx + 55.0f, cy + horDy};
   DrawLineEx(hLeft, hRight, 2.5f, WHITE);
 
   EndScissorMode();
 
-  DrawCircle((int)cx, (int)cy, 3.0f, Color{255, 215, 0, 255});
-  DrawLineEx(Vector2{cx - 12.0f, cy}, Vector2{cx - 4.0f, cy}, 2.0f,
-             Color{255, 215, 0, 255});
-  DrawLineEx(Vector2{cx + 4.0f, cy}, Vector2{cx + 12.0f, cy}, 2.0f,
-             Color{255, 215, 0, 255});
-  DrawLineEx(Vector2{cx, cy - 8.0f}, Vector2{cx, cy - 3.0f}, 2.0f,
-             Color{255, 215, 0, 255});
+  // 3. Draw Aircraft Reticle (Rotates to show plane's roll against the fixed
+  // background) Invert rollDeg here to fix the opposite rotation issue!
+  float rad = -rollDeg * DEG2RAD;
+  float cosR = cosf(rad);
+  float sinR = sinf(rad);
+
+  // Helper to rotate the reticle lines around the center of the UI box
+  auto rot = [&](float x, float y) -> Vector2 {
+    return {cx + (x * cosR - y * sinR), cy + (x * sinR + y * cosR)};
+  };
+
+  Color reticleCol = Color{255, 215, 0, 255}; // Gold indicator
+
+  // Central dot
+  DrawCircleV(rot(0.0f, 0.0f), 3.0f, reticleCol);
+
+  // Rotating plane wings and tail
+  DrawLineEx(rot(-14.0f, 0.0f), rot(-4.0f, 0.0f), 2.5f,
+             reticleCol);                                          // Left wing
+  DrawLineEx(rot(4.0f, 0.0f), rot(14.0f, 0.0f), 2.5f, reticleCol); // Right wing
+  DrawLineEx(rot(0.0f, -10.0f), rot(0.0f, -4.0f), 2.5f,
+             reticleCol); // Top tail fin
 }
 
 void BudgetFlightSimulatorScene::Draw() {
@@ -2154,13 +2337,13 @@ void BudgetFlightSimulatorScene::Draw() {
           DrawRectangleLines((int)(screenPos.x - halfBox),
                              (int)(screenPos.y - halfBox), (int)boxSize,
                              (int)boxSize, lockColor);
-          
+
           if (enemy.id == "friendly_airliner") {
-              DrawUIString("ESCORT", screenPos.x - 22.0f,
-                           screenPos.y - halfBox - 16.0f, 12.0f, SKYBLUE);
+            DrawUIString("ESCORT", screenPos.x - 22.0f,
+                         screenPos.y - halfBox - 16.0f, 12.0f, SKYBLUE);
           } else {
-              DrawUIString("LOCK-ON", screenPos.x - 28.0f,
-                           screenPos.y - halfBox - 16.0f, 12.0f, RED);
+            DrawUIString("LOCK-ON", screenPos.x - 28.0f,
+                         screenPos.y - halfBox - 16.0f, 12.0f, RED);
           }
           DrawUIString(TextFormat("%.0fm", distM), screenPos.x - 20.0f,
                        screenPos.y + halfBox + 4.0f, 12.0f, lockColor);
@@ -2322,15 +2505,14 @@ void BudgetFlightSimulatorScene::DrawTelemetryCluster(int screenWidth,
 
   DrawUIString(TextFormat("AIRSPEED   %4.0f KM/H", m_aircraft.GetAirspeedKmh()),
                posX + 14.0f, posY + 32.0f, 12.0f, Color{120, 240, 255, 255});
-  DrawUIString(TextFormat("ALTITUDE   %4.1f M", m_aircraft.GetAltitudeMeters()),
-               posX + 14.0f, posY + 50.0f, 12.0f, Color{120, 240, 255, 255});
 
   DrawUIString("THR", posX + 14.0f, posY + 74.0f, 10.0f, RAYWHITE);
   Rectangle thrBg = {posX + 48.0f, posY + 72.0f, 140.0f, 13.0f};
   DrawRectangleRounded(thrBg, 0.6f, 4, Color{20, 40, 60, 180});
-  DrawRectangleRounded(
-      Rectangle{thrBg.x, thrBg.y, thrBg.width * (m_throttle + 0.3f) / 1.3f, thrBg.height}, 0.6f,
-      4, Color{80, 210, 255, 255});
+  DrawRectangleRounded(Rectangle{thrBg.x, thrBg.y,
+                                 thrBg.width * (m_throttle + 0.3f) / 1.3f,
+                                 thrBg.height},
+                       0.6f, 4, Color{80, 210, 255, 255});
   DrawRectangleRoundedLines(thrBg, 0.6f, 4, Color{130, 220, 255, 200});
   DrawUIString(TextFormat("%.0f%%", m_throttle * 100.0f), posX + 196.0f,
                posY + 72.0f, 11.0f, Color{120, 240, 255, 255});

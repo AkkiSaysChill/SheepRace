@@ -425,6 +425,7 @@
                 <Radius>35.0</Radius>
                 <Speed>140.0</Speed>
             </Enemy>
+            <!-- WAVE 1 -->
             <Enemy id="mission10_ambush_1" name="PMC Interceptor" type="AIR_PATROL" targetStage="4">
                 <Position x="-200.0" y="-1000.0" z="0.0"/>
                 <Health>120.0</Health>
@@ -436,6 +437,32 @@
                 <Health>120.0</Health>
                 <Radius>25.0</Radius>
                 <Speed>190.0</Speed>
+            </Enemy>
+            <!-- WAVE 2 -->
+            <Enemy id="mission10_ambush_3" name="PMC Interceptor" type="AIR_PATROL" targetStage="4">
+                <Position x="200.0" y="-1000.0" z="0.0"/>
+                <Health>120.0</Health>
+                <Radius>25.0</Radius>
+                <Speed>190.0</Speed>
+            </Enemy>
+            <Enemy id="mission10_ambush_4" name="PMC Interceptor" type="AIR_PATROL" targetStage="4">
+                <Position x="200.0" y="-1000.0" z="0.0"/>
+                <Health>120.0</Health>
+                <Radius>25.0</Radius>
+                <Speed>190.0</Speed>
+            </Enemy>
+            <!-- WAVE 3 -->
+            <Enemy id="mission10_ambush_5" name="PMC Ace" type="AIR_PATROL" targetStage="4">
+                <Position x="200.0" y="-1000.0" z="0.0"/>
+                <Health>150.0</Health>
+                <Radius>25.0</Radius>
+                <Speed>210.0</Speed>
+            </Enemy>
+            <Enemy id="mission10_ambush_6" name="PMC Ace" type="AIR_PATROL" targetStage="4">
+                <Position x="200.0" y="-1000.0" z="0.0"/>
+                <Health>150.0</Health>
+                <Radius>25.0</Radius>
+                <Speed>210.0</Speed>
             </Enemy>
         </Enemies>
 
