@@ -22,7 +22,15 @@ uniform vec3 u_skyColor;      // e.g. vec3(0.35, 0.55, 0.85)
 uniform vec3 u_equatorColor;  // e.g. vec3(0.50, 0.55, 0.60)
 uniform vec3 u_groundColor;   // e.g. vec3(0.12, 0.10, 0.08)
 
+// Weather & Distant Fog Uniforms
+uniform float u_fogDensity;   // Driven by WeatherSystem (0.0 for clear, ~0.0018 for dense fog)
+uniform vec3  u_fogColor;     // Horizon haze color from DayNightCycle + WeatherSystem
+
 out vec4 finalColor;
+
+// Far-distance atmospheric haze bounds (always active for horizon blending)
+const float DISTANT_FOG_START = 1800.0;
+const float DISTANT_FOG_END   = 9500.0;
 
 // Unity Tri-Color GI Ambient model
 vec3 CalculateAmbientGI(vec3 normal)
@@ -94,5 +102,25 @@ void main()
     litColor += ((1.0 - shadow) * specular) + (fresnelRim * u_skyColor * 0.2);
 
     // Linear-to-sRGB Gamma Correction
-    finalColor = vec4(pow(litColor, vec3(1.0 / 2.2)), texelColor.a);
+    vec3 finalRGB = pow(litColor, vec3(1.0 / 2.2));
+
+    // 6. Distant Atmospheric Haze + Dynamic Weather Fog
+    float dist = length(viewPos - fragPosition);
+
+    // Subtle far-distance horizon fade (always on)
+    float distantFog = smoothstep(DISTANT_FOG_START, DISTANT_FOG_END, dist) * 0.85;
+
+    // Dense weather fog (exponential-squared, driven by u_fogDensity)
+    float weatherFog = 0.0;
+    if (u_fogDensity > 0.00001)
+    {
+        weatherFog = 1.0 - exp(-pow(dist * u_fogDensity, 2.0));
+    }
+
+    float totalFog = clamp(max(distantFog, weatherFog), 0.0, 1.0);
+    vec3 fogCol = (length(u_fogColor) > 0.01) ? u_fogColor : u_equatorColor;
+
+    finalRGB = mix(finalRGB, fogCol, totalFog);
+
+    finalColor = vec4(finalRGB, texelColor.a);
 }

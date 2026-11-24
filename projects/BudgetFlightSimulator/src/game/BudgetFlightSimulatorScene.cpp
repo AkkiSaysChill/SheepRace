@@ -18,7 +18,14 @@
 
 static std::vector<std::vector<char>> s_persistentAudioMemory;
 static int s_mission10Phase = 0;
+static bool s_mission05AmbushActive = false;
 static float s_mission10Timer = 0.0f;
+
+// PHOTO MODE STATE
+static bool s_photoMode = false;
+static bool s_takeScreenshot = false;
+static float s_flashTimer = 0.0f;
+static Camera3D s_photoCamera = {0};
 
 BudgetFlightSimulatorScene::BudgetFlightSimulatorScene() : m_engine(nullptr) {}
 
@@ -76,6 +83,9 @@ void BudgetFlightSimulatorScene::Initialize(Engine *engine) {
   // Ensure fresh state on restart
   s_mission10Phase = 0;
   s_mission10Timer = 0.0f;
+  s_photoMode = false;
+  s_takeScreenshot = false;
+  s_flashTimer = 0.0f;
 
   const char *fontPath = "DATA/FONTS/Audiowide-Regular.ttf";
   if (FileExists(fontPath)) {
@@ -297,57 +307,58 @@ void BudgetFlightSimulatorScene::Initialize(Engine *engine) {
 
   m_missionManager.Initialize(m_engine);
 
-  m_missionManager.SetSetupCallback(
-      [this](const std::string &planeId, Vector3 spawnPos, float headingDeg) {
-        if (!planeId.empty()) {
-          SwitchAircraft(planeId);
+  m_missionManager.SetSetupCallback([this](const std::string &planeId,
+                                           Vector3 spawnPos, float headingDeg) {
+    if (!planeId.empty()) {
+      SwitchAircraft(planeId);
+    }
+    m_aircraft.Reset(spawnPos);
+    m_aircraft.orientation =
+        QuaternionFromEuler(0.0f, -headingDeg * DEG2RAD, 0.0f);
+    m_aircraft.isOnGround = true;
+    m_aircraft.health = 100.0f;
+    m_throttle = 0.0f;
+
+    m_engineFailed = false;
+    m_engineSmokeTimer = 0.0f;
+
+    m_droppedPayloads.clear();
+    m_bullets.clear();
+    m_missiles.clear();
+    m_enemyJets.clear();
+
+    const MissionData *curMission = m_missionManager.GetCurrentMission();
+    if (curMission) {
+      for (const auto &eData : curMission->enemies) {
+        EnemyAce ace{}; // FIXED: Zero-initialize to wipe stack garbage memory
+        ace.id = eData.id;
+        ace.name = eData.name;
+        ace.position = eData.position;
+        ace.orientation = QuaternionFromEuler(0.0f, 180.0f * DEG2RAD, 0.0f);
+        ace.velocity = {0.0f, 0.0f, -eData.speed};
+        ace.health = eData.health;
+        ace.maxHealth = eData.maxHealth;
+        ace.hitRadius = eData.radius;
+        ace.isAlive = true; // FIXED: Explicitly set alive state
+
+        if (ace.id.find("mission10_ambush") != std::string::npos ||
+            ace.id == "ambush_jet_1" || ace.id == "ambush_jet_2" ||
+            ace.id == "friendly_airliner") {
+          ace.isAlive = false;
         }
-        m_aircraft.Reset(spawnPos);
-        m_aircraft.orientation =
-            QuaternionFromEuler(0.0f, -headingDeg * DEG2RAD, 0.0f);
-        m_aircraft.isOnGround = true;
-        m_aircraft.health = 100.0f;
-        m_throttle = 0.0f;
 
-        m_engineFailed = false;
-        m_engineSmokeTimer = 0.0f;
-
-        m_droppedPayloads.clear();
-        m_bullets.clear();
-        m_missiles.clear();
-        m_enemyJets.clear();
-
-        const MissionData *curMission = m_missionManager.GetCurrentMission();
-        if (curMission) {
-          for (const auto &eData : curMission->enemies) {
-            EnemyAce ace;
-            ace.id = eData.id;
-            ace.name = eData.name;
-            ace.position = eData.position;
-            ace.orientation = QuaternionFromEuler(0.0f, 180.0f * DEG2RAD, 0.0f);
-            ace.velocity = {0.0f, 0.0f, -eData.speed};
-            ace.health = eData.health;
-            ace.maxHealth = eData.maxHealth;
-            ace.hitRadius = eData.radius;
-
-            if (ace.id.find("mission10_ambush") != std::string::npos ||
-                ace.id == "ambush_jet_1" || ace.id == "ambush_jet_2" ||
-                ace.id == "friendly_airliner") {
-              ace.isAlive = false;
-            }
-
-            ace.gunCooldown = 0.0f;
-            ace.missileCooldown = 1.0f;
-            ace.evadeTimer = 0.0f;
-            m_enemyJets.push_back(ace);
-          }
-        }
-      });
+        ace.gunCooldown = 0.0f;
+        ace.missileCooldown = 1.0f;
+        ace.evadeTimer = 0.0f;
+        m_enemyJets.push_back(ace);
+      }
+    }
+  });
 
   m_missionManager.SetEventCallback([this](const std::string &eventName,
                                            const Vector3 &stagePos) {
     if (eventName == "DROP_CARGO") {
-      DroppedPayload p;
+      DroppedPayload p{};
       p.position =
           Vector3Subtract(m_aircraft.position, Vector3{0.0f, 2.5f, 0.0f});
       p.velocity = m_aircraft.velocity;
@@ -371,6 +382,8 @@ void BudgetFlightSimulatorScene::Initialize(Engine *engine) {
       CutsceneController::GetInstance().PlayCutscene("engine_flameout",
                                                      failCam);
     } else if (eventName == "TRIGGER_AMBUSH") {
+      s_mission05AmbushActive = true;
+
       for (auto &enemy : m_enemyJets) {
         if (enemy.id == "ambush_jet_1" || enemy.id == "ambush_jet_2") {
           enemy.isAlive = true;
@@ -396,20 +409,28 @@ void BudgetFlightSimulatorScene::Initialize(Engine *engine) {
                                                      ambushCam);
 
     } else if (eventName == "DITCH_WATER") {
-      HomingMissile m;
+      s_mission05AmbushActive = true;
+
+      // Spawn guaranteed-kill missile (150 damage) behind the plane
+      HomingMissile m{};
       m.position = Vector3Add(m_aircraft.position,
-                              Vector3Scale(m_aircraft.GetForward(), -120.0f));
-      m.velocity = Vector3Scale(m_aircraft.GetForward(), 600.0f);
+                              Vector3Scale(m_aircraft.GetForward(), -220.0f));
+      m.velocity = Vector3Scale(m_aircraft.GetForward(), 350.0f);
       m.targetPos = m_aircraft.position;
       m.isTrackingPlayer = true;
-      m.speed = 800.0f;
+      m.speed = 380.0f;
       m.turnRate = 25.0f;
-      m.life = 4.0f;
+      m.life = 5.0f;
       m.blastRadius = 50.0f;
-      m.damage = 250.0f;
+      m.damage = 150.0f;
       m.active = true;
       m_missiles.push_back(m);
 
+      // Play missile-impact cutscene only on the last checkpoint
+      CameraKeyframe missileCam{};
+      missileCam.duration = 4.0f;
+      CutsceneController::GetInstance().PlayCutscene("m05_missile_hit",
+                                                     missileCam);
     } else if (eventName == "SWITCH_TO_JET") {
       m_cinematicMode = false;
 
@@ -662,7 +683,7 @@ void BudgetFlightSimulatorScene::UpdateDogfight(float deltaTime) {
     if (enemy.evadeTimer <= 0.0f && gunAlignment > 0.965f &&
         distToPlayer < 450.0f && enemy.gunCooldown <= 0.0f) {
       enemy.gunCooldown = (enemy.id == "commander_boss") ? 0.08f : 0.12f;
-      BulletTracer b;
+      BulletTracer b{};
       b.position = Vector3Add(enemy.position, Vector3Scale(enemyFwd, 6.0f));
       b.velocity = Vector3Scale(enemyFwd, 1100.0f);
       b.life = 1.4f;
@@ -676,7 +697,7 @@ void BudgetFlightSimulatorScene::UpdateDogfight(float deltaTime) {
         enemy.missileCooldown <= 0.0f && !targetingAirliner) {
       enemy.missileCooldown = (enemy.id == "commander_boss") ? 4.0f : 8.0f;
 
-      HomingMissile m;
+      HomingMissile m{};
       m.position = Vector3Subtract(enemy.position, Vector3{0.0f, 1.2f, 0.0f});
       m.velocity = Vector3Scale(enemyFwd, 180.0f);
       m.targetPos = m_aircraft.position;
@@ -894,15 +915,34 @@ void BudgetFlightSimulatorScene::Update(float deltaTime) {
     m_isFrozen = !m_isFrozen;
   }
 
-  if (IsKeyPressed(KEY_F1)) {
+  // --- PHOTO MODE LOGIC ---
+  if (IsKeyPressed(KEY_P)) {
+    s_photoMode = !s_photoMode;
+    m_isFrozen = s_photoMode;
+    if (s_photoMode) {
+      m_cinematicMode = false;               // Disable cinematic locks
+      s_photoCamera = m_engine->GetCamera(); // Capture current perspective
+    }
+  }
+
+  if (s_photoMode && (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE))) {
+    s_takeScreenshot = true;
+  }
+
+  if (s_flashTimer > 0.0f) {
+    s_flashTimer -= deltaTime;
+  }
+  // ------------------------
+
+  if (IsKeyPressed(KEY_F1) && !s_photoMode) {
     m_cinematicMode = !m_cinematicMode;
   }
 
-  if (m_cinematicMode && IsKeyPressed(KEY_F2)) {
+  if (m_cinematicMode && IsKeyPressed(KEY_F2) && !s_photoMode) {
     m_currentCinematicShot = (m_currentCinematicShot + 1) % CINEMATIC_COUNT;
   }
 
-  if (m_cinematicMode) {
+  if (m_cinematicMode && !m_isFrozen) {
     m_cinematicAngle += 0.35f * deltaTime;
   }
 
@@ -1058,7 +1098,7 @@ void BudgetFlightSimulatorScene::Update(float deltaTime) {
   auto &dayNight = m_engine->GetDayNightCycle();
   dayNight.Update(deltaTime);
 
-  if (IsKeyDown(KEY_P))
+  if (IsKeyDown(KEY_P) && !s_photoMode)
     dayNight.SetTime(dayNight.GetTime() + 1.0f * deltaTime);
   if (IsKeyDown(KEY_O))
     dayNight.SetTime(dayNight.GetTime() - 1.0f * deltaTime);
@@ -1136,8 +1176,16 @@ void BudgetFlightSimulatorScene::Update(float deltaTime) {
       m_aircraft.position.y = impactAltitude;
       TriggerExplosionFX(m_aircraft.position, 3.5f);
 
+      bool isMission05 =
+          (m_missionManager.GetCurrentMission() &&
+           m_missionManager.GetCurrentMission()->id == "campaign_05_smuggler");
+
       if (!m_missionManager.IsCompleted()) {
-        m_missionManager.FailMission();
+        if (isMission05 && s_mission05AmbushActive) {
+          m_missionManager.CompleteMission();
+        } else {
+          m_missionManager.FailMission();
+        }
       }
     }
   }
@@ -1147,7 +1195,7 @@ void BudgetFlightSimulatorScene::Update(float deltaTime) {
       (m_aircraft.health > 0.0f) && !m_missionManager.IsFailed();
 
   if (inputAllowed) {
-    FlightInput input;
+    FlightInput input{};
     if (IsKeyDown(KEY_W))
       input.pitch = -1.0f;
     if (IsKeyDown(KEY_S))
@@ -1326,7 +1374,7 @@ void BudgetFlightSimulatorScene::Update(float deltaTime) {
   m_flightCamera.Update(m_aircraft, deltaTime);
   Camera3D flyCam = m_flightCamera.GetRaylibCamera();
 
-  if (m_cinematicMode) {
+  if (m_cinematicMode && !s_photoMode) {
     Vector3 pFwd = m_aircraft.GetForward();
     Vector3 pUp = m_aircraft.GetUp();
     Vector3 pRight = m_aircraft.GetRight();
@@ -1361,7 +1409,7 @@ void BudgetFlightSimulatorScene::Update(float deltaTime) {
       break;
     }
     }
-  } else if (CutsceneController::GetInstance().IsPlaying()) {
+  } else if (CutsceneController::GetInstance().IsPlaying() && !s_photoMode) {
     CutsceneController::GetInstance().Update(deltaTime, flyCam);
 
     std::string cutId =
@@ -1461,6 +1509,14 @@ void BudgetFlightSimulatorScene::Update(float deltaTime) {
       flyCam.position = Vector3Add(bossPos, Vector3{-50.0f, -30.0f, -90.0f});
       flyCam.target = Vector3Add(bossPos, Vector3{0.0f, 15.0f, 20.0f});
       flyCam.up = Vector3{0.0f, 1.0f, 0.0f};
+    } else if (cutId == "m05_missile_hit") {
+      flyCam.position =
+          Vector3Add(m_aircraft.position,
+                     Vector3Add(Vector3Scale(pRight, 32.0f),
+                                Vector3Add(Vector3Scale(pUp, 10.0f),
+                                           Vector3Scale(pFwd, -28.0f))));
+      flyCam.target = m_aircraft.position;
+      flyCam.up = Vector3{0.0f, 1.0f, 0.0f};
     }
   } else {
     float camGroundH =
@@ -1473,7 +1529,8 @@ void BudgetFlightSimulatorScene::Update(float deltaTime) {
     }
   }
 
-  if (isMission10 && s_mission10Phase == 1 && !m_cinematicMode) {
+  if (isMission10 && s_mission10Phase == 1 && !m_cinematicMode &&
+      !s_photoMode) {
     Vector3 cargoPos = m_aircraft.position;
     for (const auto &enemy : m_enemyJets) {
       if (enemy.id == "friendly_airliner") {
@@ -1496,19 +1553,75 @@ void BudgetFlightSimulatorScene::Update(float deltaTime) {
   }
 
   Camera &engineCam = m_engine->GetCamera();
-  if (m_screenShakeIntensity > 0.01f &&
-      !CutsceneController::GetInstance().IsPlaying() && !m_cinematicMode) {
-    flyCam.position.x +=
-        (((float)rand() / (float)RAND_MAX) - 0.5f) * m_screenShakeIntensity;
-    flyCam.position.y +=
-        (((float)rand() / (float)RAND_MAX) - 0.5f) * m_screenShakeIntensity;
-  }
 
-  engineCam.position = flyCam.position;
-  engineCam.target = flyCam.target;
-  engineCam.up = flyCam.up;
-  engineCam.fovy = flyCam.fovy;
-  engineCam.projection = flyCam.projection;
+  // --- FREE FLY PHOTO MODE CAMERA ---
+  if (s_photoMode) {
+    float moveSpeed = 60.0f * deltaTime;
+    if (IsKeyDown(KEY_LEFT_SHIFT))
+      moveSpeed *= 3.0f;
+
+    Vector3 forward = Vector3Normalize(
+        Vector3Subtract(s_photoCamera.target, s_photoCamera.position));
+    Vector3 right =
+        Vector3Normalize(Vector3CrossProduct(forward, s_photoCamera.up));
+
+    if (IsKeyDown(KEY_W))
+      s_photoCamera.position =
+          Vector3Add(s_photoCamera.position, Vector3Scale(forward, moveSpeed));
+    if (IsKeyDown(KEY_S))
+      s_photoCamera.position = Vector3Subtract(
+          s_photoCamera.position, Vector3Scale(forward, moveSpeed));
+    if (IsKeyDown(KEY_D))
+      s_photoCamera.position =
+          Vector3Add(s_photoCamera.position, Vector3Scale(right, moveSpeed));
+    if (IsKeyDown(KEY_A))
+      s_photoCamera.position = Vector3Subtract(s_photoCamera.position,
+                                               Vector3Scale(right, moveSpeed));
+    if (IsKeyDown(KEY_E))
+      s_photoCamera.position = Vector3Add(
+          s_photoCamera.position, Vector3Scale(s_photoCamera.up, moveSpeed));
+    if (IsKeyDown(KEY_Q))
+      s_photoCamera.position = Vector3Subtract(
+          s_photoCamera.position, Vector3Scale(s_photoCamera.up, moveSpeed));
+
+    Vector2 mouseDelta = GetMouseDelta();
+
+    // Horizontal rotation (Yaw)
+    Matrix yawMat = MatrixRotateY(-mouseDelta.x * 0.003f);
+    forward = Vector3Transform(forward, yawMat);
+
+    // Vertical rotation (Pitch)
+    right = Vector3Normalize(Vector3CrossProduct(forward, Vector3{0, 1, 0}));
+    Matrix pitchMat = MatrixRotate(right, -mouseDelta.y * 0.003f);
+    Vector3 newForward = Vector3Transform(forward, pitchMat);
+
+    // Prevent gimbal lock / flipping upside down
+    float upDot = Vector3DotProduct(newForward, Vector3{0, 1, 0});
+    if (upDot > -0.99f && upDot < 0.99f) {
+      forward = newForward;
+    }
+
+    s_photoCamera.target = Vector3Add(s_photoCamera.position, forward);
+    s_photoCamera.up = Vector3{0, 1, 0};
+
+    engineCam = s_photoCamera;
+  }
+  // ----------------------------------
+  else {
+    if (m_screenShakeIntensity > 0.01f &&
+        !CutsceneController::GetInstance().IsPlaying() && !m_cinematicMode) {
+      flyCam.position.x +=
+          (((float)rand() / (float)RAND_MAX) - 0.5f) * m_screenShakeIntensity;
+      flyCam.position.y +=
+          (((float)rand() / (float)RAND_MAX) - 0.5f) * m_screenShakeIntensity;
+    }
+
+    engineCam.position = flyCam.position;
+    engineCam.target = flyCam.target;
+    engineCam.up = flyCam.up;
+    engineCam.fovy = flyCam.fovy;
+    engineCam.projection = flyCam.projection;
+  }
 
   Vector3 skySun = Vector3Negate(dayNight.GetCurrentLighting().lightDir);
   m_ocean.Update(deltaTime, engineCam, skySun);
@@ -2171,7 +2284,6 @@ void BudgetFlightSimulatorScene::DrawAltitudeBar(float altitudeM,
 void BudgetFlightSimulatorScene::DrawPitchLadderHUD(float pitchDeg,
                                                     float rollDeg,
                                                     int screenHeight) {
-  // 1. Maintain original box projection placement in the bottom-left corner
   const float boxW = 160.0f;
   const float boxH = 160.0f;
   const float posX = 24.0f;
@@ -2195,7 +2307,6 @@ void BudgetFlightSimulatorScene::DrawPitchLadderHUD(float pitchDeg,
 
   float pxPerDeg = 2.2f;
 
-  // 2. Draw Pitch Ladder (Lines stay perfectly horizontal, sliding up and down)
   for (int p = -80; p <= 80; p += 10) {
     if (p == 0)
       continue;
@@ -2204,7 +2315,6 @@ void BudgetFlightSimulatorScene::DrawPitchLadderHUD(float pitchDeg,
     Color barCol =
         (p > 0) ? Color{100, 245, 140, 230} : Color{90, 190, 255, 230};
 
-    // Left and Right horizontal bars
     Vector2 l1 = {cx - barLen, cy + dy};
     Vector2 l2 = {cx - 8.0f, cy + dy};
     DrawLineEx(l1, l2, 2.0f, barCol);
@@ -2213,13 +2323,11 @@ void BudgetFlightSimulatorScene::DrawPitchLadderHUD(float pitchDeg,
     Vector2 r2 = {cx + barLen, cy + dy};
     DrawLineEx(r1, r2, 2.0f, barCol);
 
-    // Ticks point towards the artificial horizon (0 degrees)
     float tickDir = (p > 0) ? 6.0f : -6.0f;
     DrawLineEx(l1, Vector2{l1.x, l1.y + tickDir}, 2.0f, barCol);
     DrawLineEx(r2, Vector2{r2.x, r2.y + tickDir}, 2.0f, barCol);
   }
 
-  // Draw Artificial Horizon Line (0 degrees)
   float horDy = pitchDeg * pxPerDeg;
   Vector2 hLeft = {cx - 55.0f, cy + horDy};
   Vector2 hRight = {cx + 55.0f, cy + horDy};
@@ -2227,35 +2335,45 @@ void BudgetFlightSimulatorScene::DrawPitchLadderHUD(float pitchDeg,
 
   EndScissorMode();
 
-  // 3. Draw Aircraft Reticle (Rotates to show plane's roll against the fixed
-  // background) Invert rollDeg here to fix the opposite rotation issue!
   float rad = -rollDeg * DEG2RAD;
   float cosR = cosf(rad);
   float sinR = sinf(rad);
 
-  // Helper to rotate the reticle lines around the center of the UI box
   auto rot = [&](float x, float y) -> Vector2 {
     return {cx + (x * cosR - y * sinR), cy + (x * sinR + y * cosR)};
   };
 
-  Color reticleCol = Color{255, 215, 0, 255}; // Gold indicator
+  Color reticleCol = Color{255, 215, 0, 255};
 
-  // Central dot
   DrawCircleV(rot(0.0f, 0.0f), 3.0f, reticleCol);
-
-  // Rotating plane wings and tail
-  DrawLineEx(rot(-14.0f, 0.0f), rot(-4.0f, 0.0f), 2.5f,
-             reticleCol);                                          // Left wing
-  DrawLineEx(rot(4.0f, 0.0f), rot(14.0f, 0.0f), 2.5f, reticleCol); // Right wing
-  DrawLineEx(rot(0.0f, -10.0f), rot(0.0f, -4.0f), 2.5f,
-             reticleCol); // Top tail fin
+  DrawLineEx(rot(-14.0f, 0.0f), rot(-4.0f, 0.0f), 2.5f, reticleCol);
+  DrawLineEx(rot(4.0f, 0.0f), rot(14.0f, 0.0f), 2.5f, reticleCol);
+  DrawLineEx(rot(0.0f, -10.0f), rot(0.0f, -4.0f), 2.5f, reticleCol);
 }
 
 void BudgetFlightSimulatorScene::Draw() {
   int screenWidth = GetScreenWidth();
   int screenHeight = GetScreenHeight();
 
-  if (!m_cinematicMode) {
+  // --- 1. PHOTO MODE SCREENSHOT CAPTURE ---
+  // (We do this first, right after Draw3D finishes, so no UI is in the image!)
+  if (s_takeScreenshot) {
+    const char *filename = TextFormat("comic_panel_%d.png", (int)GetTime());
+    TakeScreenshot(filename);
+    TraceLog(LOG_INFO, "[PHOTO MODE] Captured panel as: %s", filename);
+    s_takeScreenshot = false;
+    s_flashTimer = 0.8f; // Triggers a shutter flash
+  }
+
+  // Camera Flash Effect
+  if (s_flashTimer > 0.0f) {
+    DrawRectangle(0, 0, screenWidth, screenHeight, Fade(WHITE, s_flashTimer));
+  }
+
+  // ----------------------------------------
+  // HUD Elements (Disabled if cinematic OR photo mode)
+  // ----------------------------------------
+  if (!m_cinematicMode && !s_photoMode) {
     DrawCompassTape(m_aircraft.GetHeading(), screenWidth);
     DrawRadarHUD(screenWidth, screenHeight);
     DrawTelemetryCluster(screenWidth, screenHeight);
@@ -2268,12 +2386,12 @@ void BudgetFlightSimulatorScene::Draw() {
                     screenHeight);
   }
 
-  if (m_explosionPostFXTimer > 0.05f && !m_cinematicMode) {
+  if (m_explosionPostFXTimer > 0.05f && !m_cinematicMode && !s_photoMode) {
     DrawRectangle(0, 0, screenWidth, screenHeight,
                   Fade(RED, m_explosionPostFXTimer * 0.4f));
   }
 
-  if (m_aircraft.stats.hasWeapons && !m_cinematicMode) {
+  if (m_aircraft.stats.hasWeapons && !m_cinematicMode && !s_photoMode) {
     int cx = screenWidth / 2;
     int cy = screenHeight / 2;
 
@@ -2345,7 +2463,7 @@ void BudgetFlightSimulatorScene::Draw() {
 
   const MissionData *curMission = m_missionManager.GetCurrentMission();
   if (curMission && !FlightSession::GetInstance().activeMissionId.empty() &&
-      !m_cinematicMode) {
+      !m_cinematicMode && !s_photoMode) {
     const float missionBoxW = 380.0f;
     const int contentInnerW = (int)missionBoxW - 28;
 
@@ -2387,7 +2505,7 @@ void BudgetFlightSimulatorScene::Draw() {
                      (int)missionRect.y + 34, contentInnerW, 11, 4, RAYWHITE);
   }
 
-  if (!m_cinematicMode) {
+  if (!m_cinematicMode && !s_photoMode) {
     const char *bottomBarText =
         "Planes: [ [ ] / [ ] ] | Missions: [ N / M ] | Drop: [ G ] | "
         "Cinematic: [ F1 ] | Menu: [ ESC ]";
@@ -2397,7 +2515,7 @@ void BudgetFlightSimulatorScene::Draw() {
     DrawGlassPanel(bbRect, 0.5f, Color{12, 22, 36, 210});
     DrawUIString(bottomBarText, screenWidth / 2.0f - bbW / 2.0f,
                  screenHeight - 26, 11.0f, Color{210, 240, 255, 240});
-  } else {
+  } else if (m_cinematicMode && !s_photoMode) {
     DrawRectangle(0, 0, screenWidth, 75, BLACK);
     DrawRectangle(0, screenHeight - 75, screenWidth, 75, BLACK);
 
@@ -2409,7 +2527,36 @@ void BudgetFlightSimulatorScene::Draw() {
                  30, 25, 13, Fade(WHITE, 0.7f));
   }
 
-  if (m_aircraft.isStalling && !m_cinematicMode) {
+  // --- 2. PHOTO MODE OVERLAY ---
+  if (s_photoMode && s_flashTimer <= 0.0f) {
+    // Cinematic letterboxing for focus
+    DrawRectangle(0, 0, screenWidth, 80, Fade(BLACK, 0.7f));
+    DrawRectangle(0, screenHeight - 80, screenWidth, 80, Fade(BLACK, 0.7f));
+
+    const char *title = "[ P H O T O   M O D E ]";
+    DrawUIString(title,
+                 screenWidth / 2.0f - MeasureUIString(title, 24.0f) / 2.0f, 25,
+                 24, Color{100, 240, 255, 255});
+
+    const char *controls = "[ENTER] Capture Panel   |   [WASD/Mouse] Move "
+                           "Camera   |   [Q/E] Up/Down   |   [P] Resume Flight";
+    DrawUIString(controls,
+                 screenWidth / 2.0f - MeasureUIString(controls, 14.0f) / 2.0f,
+                 screenHeight - 45, 14, RAYWHITE);
+
+    // Rule of thirds framing grid
+    DrawLine(screenWidth / 3, 80, screenWidth / 3, screenHeight - 80,
+             Fade(WHITE, 0.15f));
+    DrawLine(2 * screenWidth / 3, 80, 2 * screenWidth / 3, screenHeight - 80,
+             Fade(WHITE, 0.15f));
+    DrawLine(0, screenHeight / 3, screenWidth, screenHeight / 3,
+             Fade(WHITE, 0.15f));
+    DrawLine(0, 2 * screenHeight / 3, screenWidth, 2 * screenHeight / 3,
+             Fade(WHITE, 0.15f));
+  }
+  // ------------------------------
+
+  if (m_aircraft.isStalling && !m_cinematicMode && !s_photoMode) {
     float stallW = MeasureUIString("!! STALL WARNING !!", 22.0f);
     DrawUIString("!! STALL WARNING !!", screenWidth / 2.0f - stallW / 2.0f,
                  80.0f, 22.0f, RED);

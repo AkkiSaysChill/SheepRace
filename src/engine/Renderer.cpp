@@ -61,6 +61,15 @@ Renderer::Renderer(int screenWidth, int screenHeight,
   m_shadowShader.locs[SHADER_LOC_VECTOR_VIEW] =
       GetShaderLocation(m_shadowShader, "viewPos");
 
+  std::vector<char> cloudShaderFS =
+      assetLoader.getAssetData("glsl330/volumetric_clouds.fs");
+  cloudShaderFS.push_back('\0');
+  m_cloudShader = LoadShaderFromMemory(0, cloudShaderFS.data());
+
+  m_cloudTarget = LoadRenderTexture(screenWidth / 4, screenHeight / 4);
+  SetTextureFilter(m_cloudTarget.texture,
+                   TEXTURE_FILTER_BILINEAR); // Smooth upscale
+
   int shadowMapResolution = SHADOWMAP_RESOLUTION;
   SetShaderValue(m_shadowShader,
                  GetShaderLocation(m_shadowShader, "shadowMapResolution"),
@@ -118,7 +127,8 @@ void Renderer::Render(GameObjectManager &scene, Camera &camera,
   m_currentSkySunVector = Vector3Negate(lightDir);
   int skySunLoc = GetShaderLocation(m_skyShader, "u_lightDir");
   if (skySunLoc != -1) {
-    SetShaderValue(m_skyShader, skySunLoc, &m_currentSkySunVector, SHADER_UNIFORM_VEC3);
+    SetShaderValue(m_skyShader, skySunLoc, &m_currentSkySunVector,
+                   SHADER_UNIFORM_VEC3);
   }
 
   // ── 1. SHADOW MAP PASS ───────────────────────────────────────
@@ -266,6 +276,85 @@ void Renderer::Render(GameObjectManager &scene, Camera &camera,
   EndMode3D();
   rlPopMatrix();
   EndTextureMode();
+
+  // ── 4.5. QUARTER-RES VOLUMETRIC CLOUDS PASS ──────────────────
+
+  if (VolumetricCloudsActive) {
+
+    float cloudRes[2] = {(float)m_cloudTarget.texture.width,
+                         (float)m_cloudTarget.texture.height};
+    float nearPlane = 2.0f;    // Match your Camera/RL_CULL_DISTANCE_NEAR
+    float farPlane = 15000.0f; // Match your RL_CULL_DISTANCE_FAR
+
+    SetShaderValue(m_cloudShader, GetShaderLocation(m_cloudShader, "iTime"),
+                   &time, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(m_cloudShader,
+                   GetShaderLocation(m_cloudShader, "iResolution"), cloudRes,
+                   SHADER_UNIFORM_VEC2);
+    SetShaderValue(m_cloudShader,
+                   GetShaderLocation(m_cloudShader, "u_lightDir"),
+                   &m_currentSkySunVector, SHADER_UNIFORM_VEC3);
+    SetShaderValue(m_cloudShader,
+                   GetShaderLocation(m_cloudShader, "u_cloudCover"),
+                   &cloudCover, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(m_cloudShader,
+                   GetShaderLocation(m_cloudShader, "u_cloudFalloff"),
+                   &cloudFalloff, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(m_cloudShader,
+                   GetShaderLocation(m_cloudShader, "u_cameraPos"),
+                   &camera.position, SHADER_UNIFORM_VEC3);
+    SetShaderValue(m_cloudShader,
+                   GetShaderLocation(m_cloudShader, "u_cameraForward"),
+                   &camForward, SHADER_UNIFORM_VEC3);
+    SetShaderValue(m_cloudShader,
+                   GetShaderLocation(m_cloudShader, "u_cameraUp"), &camUp,
+                   SHADER_UNIFORM_VEC3);
+    SetShaderValue(m_cloudShader,
+                   GetShaderLocation(m_cloudShader, "u_cameraRight"), &camRight,
+                   SHADER_UNIFORM_VEC3);
+    SetShaderValue(m_cloudShader,
+                   GetShaderLocation(m_cloudShader, "u_cameraFovY"),
+                   &fovYRadians, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(m_cloudShader,
+                   GetShaderLocation(m_cloudShader, "u_nearPlane"), &nearPlane,
+                   SHADER_UNIFORM_FLOAT);
+    SetShaderValue(m_cloudShader,
+                   GetShaderLocation(m_cloudShader, "u_farPlane"), &farPlane,
+                   SHADER_UNIFORM_FLOAT);
+
+    SetShaderValueTexture(m_cloudShader,
+                          GetShaderLocation(m_cloudShader, "iChannel0"),
+                          m_noiseTexture);
+    SetShaderValueTexture(m_cloudShader,
+                          GetShaderLocation(m_cloudShader, "depthTexture"),
+                          m_target.depth);
+
+    // Render clouds at 1/4 resolution
+    BeginTextureMode(m_cloudTarget);
+    ClearBackground(BLANK);
+    BeginShaderMode(m_cloudShader);
+    SetShaderValueTexture(m_cloudShader,
+                          GetShaderLocation(m_cloudShader, "iChannel0"),
+                          m_noiseTexture);
+    SetShaderValueTexture(m_cloudShader,
+                          GetShaderLocation(m_cloudShader, "depthTexture"),
+                          m_target.depth);
+    DrawRectangle(0, 0, m_cloudTarget.texture.width,
+                  m_cloudTarget.texture.height, WHITE);
+    EndShaderMode();
+    EndTextureMode();
+
+    // Composite clouds onto m_target (upscaled smoothly via bilinear filtering)
+    BeginTextureMode(m_target);
+    BeginBlendMode(BLEND_ALPHA);
+    DrawTexturePro(m_cloudTarget.texture,
+                   Rectangle{0, 0, (float)m_cloudTarget.texture.width,
+                             (float)-m_cloudTarget.texture.height},
+                   Rectangle{0, 0, currentScreenWidth, currentScreenHeight},
+                   Vector2{0, 0}, 0.0f, WHITE);
+    EndBlendMode();
+    EndTextureMode();
+  }
 
   // ── 5. TRANSPARENT PASS ──────────────────────────────────────
   if (extraDraw3D) {

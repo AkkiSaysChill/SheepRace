@@ -112,6 +112,7 @@ add_subdirectory(tools/asset_bundler)
 # add_subdirectory(projects/WuShangClan)
 # add_subdirectory(projects/TheFresnelEffect)
 add_subdirectory(projects/BudgetFlightSimulator)
+add_subdirectory(projects/VolumetricClouds)
 
 if(WIN32)
     target_link_libraries(engine PUBLIC raylib opengl32 gdi32 winmm BulletDynamics BulletCollision LinearMath)

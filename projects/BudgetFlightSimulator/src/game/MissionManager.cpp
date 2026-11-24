@@ -62,16 +62,22 @@ bool MissionManager::StartMission(const std::string &missionId) {
 }
 
 void MissionManager::AdvanceStage() {
+  bool deferCompletion = false;
+
   if (m_currentMission &&
       m_currentStageIndex < (int)m_currentMission->stages.size()) {
     const auto &stg = m_currentMission->stages[m_currentStageIndex];
+    if (stg.eventAction == "DITCH_WATER") {
+      deferCompletion = true; // Wait for the scripted missile hit & crash
+    }
     if (!stg.eventAction.empty() && m_onEventCallback) {
       m_onEventCallback(stg.eventAction, stg.position);
     }
   }
 
   m_currentStageIndex++;
-  if (m_currentStageIndex >= (int)m_currentMission->stages.size()) {
+  if (m_currentStageIndex >= (int)m_currentMission->stages.size() &&
+      !deferCompletion) {
     m_active = false;
     m_completed = true;
     m_completionBannerTimer = 5.0f;

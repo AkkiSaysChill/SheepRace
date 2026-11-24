@@ -29,6 +29,8 @@ public:
   Vector3 GetSkySunVector() const { return m_currentSkySunVector; }
   Shader GetSkyShader() const { return m_skyShader; }
 
+  bool VolumetricCloudsActive = false;
+
 private:
   Shader m_shadowShader;
   Shader m_skyShader;
@@ -37,5 +39,8 @@ private:
   RenderTexture2D m_reflectionTarget;
   Texture2D m_noiseTexture;
 
-  Vector3 m_currentSkySunVector = { -0.35f, 0.85f, -0.40f };
+  Shader m_cloudShader;
+  RenderTexture2D m_cloudTarget;
+
+  Vector3 m_currentSkySunVector = {-0.35f, 0.85f, -0.40f};
 };

@@ -41,6 +41,11 @@ public:
     m_failed = true;
     m_active = false;
   }
+  void CompleteMission() {
+    m_completed = true;
+    m_active = false;
+    m_completionBannerTimer = 5.0f;
+  }
   bool IsFailed() const { return m_failed; }
   void RestartCurrentMission() {
     if (m_currentMission) {
